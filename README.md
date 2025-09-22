@@ -15,7 +15,7 @@ Este sistema permite que cada taller tenga su propio espacio privado para gestio
 - Enlaces públicos para clientes (cotizaciones, pruebas, facturas).  
 - Reportes básicos de ventas y pendientes.  
 
-Es una solución **todo en uno** para optimizar la gestión en el día a día de las imprentas y rotulaciones:contentReference[oaicite:0]{index=0}.  
+Es una solución **todo en uno** para optimizar la gestión en el día a día de las imprentas y rotulaciones.
 
 ---
 
@@ -42,8 +42,8 @@ Es una solución **todo en uno** para optimizar la gestión en el día a día de
 
 ## ⚙️ Instalación y ejecución
 **Clonar el repositorio**
-```git clone https://github.com/GerardoGM14/track-my-sign.git```
-```cd track-my-sign```
+- ```git clone https://github.com/GerardoGM14/track-my-sign.git```
+- ```cd track-my-sign```
 
 **Instalar dependencias**
 ```npm install```
