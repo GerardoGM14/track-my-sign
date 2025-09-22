@@ -44,7 +44,7 @@ export function PaginaRegistro() {
       await registrar(datosFormulario.email, datosFormulario.password, {
         nombre: datosFormulario.nombre,
       })
-      navigate("/")
+      navigate("/precios")
     } catch (error) {
       setError(error.message || "Error al crear la cuenta")
     } finally {
@@ -83,17 +83,8 @@ export function PaginaRegistro() {
   }
 
   const redirigirSegunRol = () => {
-    if (usuarioActual?.rol === "superadmin") {
-      navigate("/superadmin/dashboard")
-    } else if (usuarioActual?.rol === "admin" && usuarioActual?.tiendaId) {
-      navigate(`/${usuarioActual.tiendaId}/dashboard`)
-    } else if (usuarioActual?.rol === "admin" && !usuarioActual?.tiendaId) {
-      navigate("/onboarding")
-    } else if (usuarioActual?.rol === "empleado" && usuarioActual?.tiendaId) {
-      navigate(`/${usuarioActual.tiendaId}/dashboard`)
-    } else {
-      navigate("/cliente/dashboard")
-    }
+    // Para usuarios nuevos registrados, siempre ir a precios
+    navigate("/precios")
   }
 
   return (
@@ -222,7 +213,7 @@ export function PaginaRegistro() {
                   id="recordarme"
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <label htmlFor="recordarme" className="ml-2 text-sm font-bold text-gray-700 flex items-center">
+                <label htmlFor="recordarme" className="ml-2 text-sm text-gray-700 flex items-center">
                   Recordarme
                   <div className="ml-1 w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 text-xs font-bold">i</span>
