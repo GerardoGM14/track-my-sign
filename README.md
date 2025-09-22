@@ -40,6 +40,31 @@ Es una solución **todo en uno** para optimizar la gestión en el día a día de
 
 ---
 
+## ⚙️ Instalación y ejecución
+**Clonar el repositorio**
+git clone https://github.com/GerardoGM14/track-my-sign.git
+cd track-my-sign
+
+**Instalar dependencias**
+npm install
+
+**Configurar Firebase**
+Crear un proyecto en [Firebase Console](https://console.firebase.google.com/)  
+Copiar la configuración en src/firebaseConfig.js.
+
+```js
+// src/firebaseConfig.js
+export const firebaseConfig = {
+  apiKey: "XXXX",
+  authDomain: "XXXX.firebaseapp.com",
+  projectId: "XXXX",
+  storageBucket: "XXXX.appspot.com",
+  messagingSenderId: "XXXX",
+  appId: "XXXX"
+};
+```
+
+
 ## 📂 Arquitectura general
 ```mermaid
 graph TD;
@@ -53,6 +78,6 @@ graph TD;
         Firestore-->Stripe;
     end
     Stripe-->Pagos[(Pagos Online)];
+l
 
-## ⚙️ Instalación y ejecución
-Clonar el repositorio
+
