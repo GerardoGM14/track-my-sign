@@ -1,12 +1,55 @@
-# React + Vite
+# 🖥️ SaaS para Imprentas y Rotulación  
+[![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://react.dev/) 
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.0-38b2ac?logo=tailwindcss)](https://tailwindcss.com/) 
+[![Firebase](https://img.shields.io/badge/Firebase-Backend-orange?logo=firebase)](https://firebase.google.com/) 
+[![Stripe](https://img.shields.io/badge/Stripe-Payments-626cd9?logo=stripe)](https://stripe.com/)  
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+✨ Proyecto **multitenant SaaS** para imprentas y talleres de rotulación. Hecho con **React, TailwindCSS y Firebase**, con **Stripe** para pagos en línea.  
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📖 Descripción
+Este sistema permite que cada taller tenga su propio espacio privado para gestionar:  
+- Cotizaciones ➝ Pedidos ➝ Producción ➝ Facturación ➝ Pagos.  
+- Flujos de trabajo con tablero Kanban.  
+- Enlaces públicos para clientes (cotizaciones, pruebas, facturas).  
+- Reportes básicos de ventas y pendientes.  
 
-## Expanding the ESLint configuration
+Es una solución **todo en uno** para optimizar la gestión en el día a día de las imprentas y rotulaciones:contentReference[oaicite:0]{index=0}.  
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🚀 Características principales
+✅ **Gestión de cotizaciones**: precios por medidas, materiales y opciones.  
+✅ **Pedidos y producción**: flujo Kanban para seguir el estado de cada trabajo.  
+✅ **Pruebas gráficas online**: subida de archivos, comentarios y aprobación de clientes.  
+✅ **Facturación**: generación de facturas personalizadas con logo de la empresa.  
+✅ **Pagos en línea con Stripe**: seguros y automatizados.  
+✅ **Reportes básicos**: ventas mensuales, facturas vencidas, tasa de conversión.  
+✅ **Multitenant**: cada cliente tiene su propio espacio aislado.  
+✅ **UI responsive y moderna**: gracias a React + TailwindCSS.  
+
+---
+
+## 🛠️ Tecnologías usadas
+- ⚛️ **Frontend**: [React 18](https://react.dev/)  
+- 🎨 **Estilos**: [TailwindCSS 4.0](https://tailwindcss.com/)  
+- 🔥 **Backend/Hosting**: [Firebase](https://firebase.google.com/)  
+- 💳 **Pagos**: [Stripe Checkout](https://stripe.com/)  
+- 📦 **DevOps sugerido**: Docker, métricas y backups (en roadmap).  
+
+---
+
+## 📂 Arquitectura general
+```mermaid
+graph TD;
+    subgraph Cliente
+        React[Tienda React + TailwindCSS]-->FirebaseAuth[Firebase Auth];
+        React-->Firestore[Firestore DB];
+        React-->Storage[Firebase Storage];
+    end
+    subgraph Backend
+        FirebaseAuth-->Stripe[Stripe API];
+        Firestore-->Stripe;
+    end
+    Stripe-->Pagos[(Pagos Online)];
