@@ -42,15 +42,15 @@ Es una solución **todo en uno** para optimizar la gestión en el día a día de
 
 ## ⚙️ Instalación y ejecución
 **Clonar el repositorio**
-git clone https://github.com/GerardoGM14/track-my-sign.git
-cd track-my-sign
+```git clone https://github.com/GerardoGM14/track-my-sign.git```
+```cd track-my-sign```
 
 **Instalar dependencias**
-npm install
+```npm install```
 
 **Configurar Firebase**
-Crear un proyecto en [Firebase Console](https://console.firebase.google.com/)  
-Copiar la configuración en src/firebaseConfig.js.
+- Crear un proyecto en [Firebase Console](https://console.firebase.google.com/)  
+- Copiar la configuración en ```src/firebaseConfig.js.```
 
 ```js
 // src/firebaseConfig.js
