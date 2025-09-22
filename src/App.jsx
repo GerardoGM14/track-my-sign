@@ -9,6 +9,7 @@ import { PaginaLogin } from "./pages/PaginaLogin"
 import { PaginaRegistro } from "./pages/PaginaRegistro"
 import { PaginaProductos } from "./pages/PaginaProductos"
 import { PaginaPrecios } from "./pages/PaginaPrecios"
+import PaginaPreciosSaaS from "./pages/PaginaPreciosSaaS"
 import { PaginaCotizaciones } from "./pages/PaginaCotizaciones"
 import { PaginaOrdenes } from "./pages/PaginaOrdenes"
 import { PaginaClientes } from "./pages/PaginaClientes"
@@ -27,6 +28,7 @@ function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/planes" element={<PaginaPlanes />} />
+              <Route path="/precios" element={<PaginaPreciosSaaS />} />
               <Route path="/login" element={<PaginaLogin />} />
               <Route path="/register" element={<PaginaRegistro />} />
 
