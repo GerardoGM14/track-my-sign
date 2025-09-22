@@ -6,10 +6,10 @@ import { useTienda } from "../contexts/ContextoTienda"
 import { collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc } from "firebase/firestore"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { db, auth } from "../lib/firebase"
-import { Button } from "../../components/ui/button"
-import { Input } from "../../components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
+import { Badge } from "../components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -17,11 +17,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../components/ui/dialog"
-import { Label } from "../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+} from "../components/ui/dialog"
+import { Label } from "../components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Trash2, Edit, Plus, Users, Mail, Phone, Calendar } from "lucide-react"
-import { toast } from "../../hooks/use-toast"
+import { toast } from "../hooks/use-toast"
 
 export default function PaginaUsuarios() {
   const { usuario } = useAuth()
