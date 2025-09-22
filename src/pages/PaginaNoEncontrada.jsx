@@ -14,3 +14,6 @@ export function NotFoundPage() {
     </div>
   )
 }
+
+export { NotFoundPage as PaginaNoEncontrada }
+export default NotFoundPage

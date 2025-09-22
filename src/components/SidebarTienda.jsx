@@ -26,7 +26,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-} from "../../components/ui/sidebar"
+} from "../components/ui/sidebar"
 import { useAuth } from "../contexts/ContextoAuth"
 
 export default function SidebarTienda() {

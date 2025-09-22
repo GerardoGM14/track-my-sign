@@ -95,9 +95,15 @@ const SidebarSeparator = React.forwardRef(({ className, ...props }, ref) => (
 ))
 SidebarSeparator.displayName = "SidebarSeparator"
 
+const SidebarFooter = React.forwardRef(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("flex items-center border-t px-4 py-3", className)} {...props} />
+))
+SidebarFooter.displayName = "SidebarFooter"
+
 export {
   Sidebar,
   SidebarContent,
+  SidebarFooter, // agregando SidebarFooter a las exportaciones
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,

@@ -53,3 +53,5 @@ export function ProveedorTienda({ children }) {
 
   return <ContextoTienda.Provider value={valor}>{children}</ContextoTienda.Provider>
 }
+
+export { useContextoTienda as useTienda }
