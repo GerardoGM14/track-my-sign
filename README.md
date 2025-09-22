@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./banner.svg" width="100%" alt="SaaS para Imprentas y Rotulación">
+</p>
+
 # 🖥️ SaaS para Imprentas y Rotulación  
 [![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://react.dev/) 
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.0-38b2ac?logo=tailwindcss)](https://tailwindcss.com/) 
