@@ -1,67 +1,111 @@
-export default function App() {
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import { ProveedorAuth } from "./contexts/ContextoAuth"
+import { ProveedorTienda } from "./contexts/ContextoTienda"
+import { Layout } from "./components/Layout"
+import { RutaProtegida } from "./components/RutaProtegida"
+import LandingPage from "./pages/LandingPage"
+import { PaginaPlanes } from "./pages/PaginaPlanes"
+import { PaginaLogin } from "./pages/PaginaLogin"
+import { PaginaRegistro } from "./pages/PaginaRegistro"
+import { PaginaProductos } from "./pages/PaginaProductos"
+import { PaginaPrecios } from "./pages/PaginaPrecios"
+import { PaginaCotizaciones } from "./pages/PaginaCotizaciones"
+import { PaginaOrdenes } from "./pages/PaginaOrdenes"
+import { PaginaClientes } from "./pages/PaginaClientes"
+import { PortalCliente } from "./pages/PortalCliente"
+import { PaginaNoEncontrada } from "./pages/PaginaNoEncontrada"
+import { PaginaFacturacion } from "./pages/PaginaFacturacion"
+import PaginaUsuarios from "./pages/PaginaUsuarios"
+import { RutaDashboard } from "./components/RutaDashboard"
+
+function App() {
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-800">
-      <header className="py-16">
-        <div className="mx-auto max-w-3xl px-6 text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-            <span className="bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 bg-clip-text text-transparent">
-              Tailwind está funcionando 🚀
-            </span>
-          </h1>
-          <p className="mt-4 text-gray-600">
-            Si ves colores, sombras y efectos hover, ¡todo OK!
-          </p>
-          <div className="mt-6 flex items-center justify-center gap-3">
-            <button className="rounded-xl px-5 py-2.5 bg-indigo-600 text-white font-medium shadow hover:shadow-md hover:bg-indigo-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              Botón primario
-            </button>
-            <button className="rounded-xl px-5 py-2.5 border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 shadow-sm">
-              Secundario
-            </button>
-          </div>
-        </div>
-      </header>
+    <Router>
+      <ProveedorAuth>
+        <ProveedorTienda>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/planes" element={<PaginaPlanes />} />
+              <Route path="/login" element={<PaginaLogin />} />
+              <Route path="/register" element={<PaginaRegistro />} />
 
-      <section className="mx-auto max-w-5xl px-6 pb-20">
-        {/* Tarjeta simple */}
-        <div className="mb-10 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold">Tarjeta de prueba</h2>
-          <p className="mt-2 text-gray-600">
-            Esta tarjeta tiene borde, sombra y padding aplicados con clases de Tailwind.
-          </p>
-          <label className="mt-4 block">
-            <span className="text-sm text-gray-700">Input de ejemplo</span>
-            <input
-              className="mt-1 w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-              placeholder="Escribe algo…"
-            />
-          </label>
-        </div>
+              <Route
+                path="/:slugTienda"
+                element={
+                  <RutaProtegida>
+                    <RutaDashboard />
+                  </RutaProtegida>
+                }
+              />
 
-        {/* Grid responsive */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {["Uno", "Dos", "Tres"].map((t, i) => (
-            <article
-              key={i}
-              className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-transform hover:-translate-y-1 hover:shadow-md"
-            >
-              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100">
-                <span className="font-semibold text-gray-700">{i + 1}</span>
-              </div>
-              <h3 className="text-lg font-semibold">Card {t}</h3>
-              <p className="mt-2 text-gray-600">
-                Pasa el mouse por aquí y debería elevarse (hover + shadow + translate).
-              </p>
-              <a
-                href="#"
-                className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:underline"
-              >
-                Ver más →
-              </a>
-            </article>
-          ))}
-        </div>
-      </section>
-    </main>
-  );
+              {/* Rutas protegidas por tienda */}
+              <Route
+                path="/:slugTienda/productos"
+                element={
+                  <RutaProtegida>
+                    <PaginaProductos />
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/:slugTienda/precios"
+                element={
+                  <RutaProtegida>
+                    <PaginaPrecios />
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/:slugTienda/cotizaciones"
+                element={
+                  <RutaProtegida>
+                    <PaginaCotizaciones />
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/:slugTienda/ordenes"
+                element={
+                  <RutaProtegida>
+                    <PaginaOrdenes />
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/:slugTienda/clientes"
+                element={
+                  <RutaProtegida>
+                    <PaginaClientes />
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/:slugTienda/facturacion"
+                element={
+                  <RutaProtegida>
+                    <PaginaFacturacion />
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/:slugTienda/usuarios"
+                element={
+                  <RutaProtegida>
+                    <PaginaUsuarios />
+                  </RutaProtegida>
+                }
+              />
+
+              {/* Portal público para clientes */}
+              <Route path="/cliente/:tokenCliente" element={<PortalCliente />} />
+              <Route path="*" element={<PaginaNoEncontrada />} />
+            </Routes>
+          </Layout>
+        </ProveedorTienda>
+      </ProveedorAuth>
+    </Router>
+  )
 }
+
+export default App

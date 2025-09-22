@@ -82,6 +82,6 @@ graph TD;
         Firestore-->Stripe;
     end
     Stripe-->Pagos[(Pagos Online)];
-l
+
 
 

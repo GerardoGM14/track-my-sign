@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react"
 import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, doc } from "firebase/firestore"
 import { db } from "../lib/firebase"
-import { usarAuth } from "../contexts/ContextoAuth"
-import { usarTienda } from "../contexts/ContextoTienda"
+import { useContextoAuth } from "../contexts/ContextoAuth"
+import { useContextoTienda } from "../contexts/ContextoTienda"
+import { ComponentePagoStripe } from "../components/ComponentePagoStripe"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -21,16 +22,38 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { FileText, DollarSign, CreditCard, Download, Send, Plus, Eye, TrendingUp } from "lucide-react"
+import {
+  FileText,
+  DollarSign,
+  CreditCard,
+  Download,
+  Send,
+  Plus,
+  Eye,
+  TrendingUp,
+  Settings,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react"
 
 export function PaginaFacturacion() {
-  const { usuario } = usarAuth()
-  const { tiendaActual } = usarTienda()
+  const { usuarioActual } = useContextoAuth()
+  const { tiendaActual } = useContextoTienda()
   const [facturas, setFacturas] = useState([])
   const [ordenes, setOrdenes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [mostrarNuevaFactura, setMostrarNuevaFactura] = useState(false)
   const [facturaSeleccionada, setFacturaSeleccionada] = useState(null)
+  const [mostrarPago, setMostrarPago] = useState(false)
+  const [facturaParaPago, setFacturaParaPago] = useState(null)
+
+  const [configuracionStripe, setConfiguracionStripe] = useState({
+    publishableKey: "",
+    secretKey: "",
+    webhookEndpoint: "",
+    activo: false,
+  })
+
   const [estadisticas, setEstadisticas] = useState({
     totalFacturado: 0,
     facturasPendientes: 0,
@@ -56,16 +79,44 @@ export function PaginaFacturacion() {
       cargarFacturas()
       cargarOrdenes()
       calcularEstadisticas()
+      cargarConfiguracionStripe()
     }
   }, [tiendaActual])
 
+  const cargarConfiguracionStripe = async () => {
+    try {
+      const configRef = collection(db, "tiendas", tiendaActual.id, "configuracion")
+      const configQuery = query(configRef, where("tipo", "==", "stripe"))
+      const configSnapshot = await getDocs(configQuery)
+
+      if (!configSnapshot.empty) {
+        const configData = configSnapshot.docs[0].data()
+        setConfiguracionStripe(configData)
+      }
+    } catch (error) {
+      console.error("Error cargando configuración de Stripe:", error)
+    }
+  }
+
+  const guardarConfiguracionStripe = async () => {
+    try {
+      const configRef = collection(db, "tiendas", tiendaActual.id, "configuracion")
+      await addDoc(configRef, {
+        ...configuracionStripe,
+        tipo: "stripe",
+        fechaActualizacion: new Date(),
+        actualizadoPor: usuarioActual.nombre,
+      })
+      alert("Configuración de Stripe guardada correctamente")
+    } catch (error) {
+      console.error("Error guardando configuración:", error)
+      alert("Error guardando la configuración")
+    }
+  }
+
   const cargarFacturas = async () => {
     try {
-      const q = query(
-        collection(db, "facturas"),
-        where("tiendaId", "==", tiendaActual.id),
-        orderBy("fechaCreacion", "desc"),
-      )
+      const q = query(collection(db, "tiendas", tiendaActual.id, "facturas"), orderBy("fechaCreacion", "desc"))
       const snapshot = await getDocs(q)
       const facturasData = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -79,11 +130,7 @@ export function PaginaFacturacion() {
 
   const cargarOrdenes = async () => {
     try {
-      const q = query(
-        collection(db, "ordenes"),
-        where("tiendaId", "==", tiendaActual.id),
-        where("estado", "==", "completado"),
-      )
+      const q = query(collection(db, "tiendas", tiendaActual.id, "ordenes"), where("estado", "==", "completado"))
       const snapshot = await getDocs(q)
       const ordenesData = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -99,19 +146,19 @@ export function PaginaFacturacion() {
 
   const calcularEstadisticas = async () => {
     try {
-      const q = query(collection(db, "facturas"), where("tiendaId", "==", tiendaActual.id))
+      const q = query(collection(db, "tiendas", tiendaActual.id, "facturas"))
       const snapshot = await getDocs(q)
       const facturasData = snapshot.docs.map((doc) => doc.data())
 
-      const totalFacturado = facturasData.reduce((sum, f) => sum + f.total, 0)
+      const totalFacturado = facturasData.reduce((sum, f) => sum + (f.total || 0), 0)
       const facturasPendientes = facturasData.filter((f) => f.estado === "pendiente").length
       const facturasPagadas = facturasData.filter((f) => f.estado === "pagado").length
 
       const fechaActual = new Date()
       const inicioMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1)
       const ingresosMes = facturasData
-        .filter((f) => f.estado === "pagado" && new Date(f.fechaPago) >= inicioMes)
-        .reduce((sum, f) => sum + f.total, 0)
+        .filter((f) => f.estado === "pagado" && f.fechaPago && new Date(f.fechaPago) >= inicioMes)
+        .reduce((sum, f) => sum + (f.total || 0), 0)
 
       setEstadisticas({
         totalFacturado,
@@ -129,28 +176,30 @@ export function PaginaFacturacion() {
       const ordenSeleccionada = ordenes.find((o) => o.id === nuevaFactura.ordenId)
       if (!ordenSeleccionada) return
 
+      const numeroFactura = `FAC-${Date.now()}`
       const facturaData = {
         ...nuevaFactura,
-        tiendaId: tiendaActual.id,
-        numeroFactura: `FAC-${Date.now()}`,
+        numeroFactura,
         estado: "pendiente",
-        fechaCreacion: new Date().toISOString(),
-        fechaVencimiento:
-          nuevaFactura.fechaVencimiento || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        clienteNombre: ordenSeleccionada.clienteNombre,
-        clienteEmail: ordenSeleccionada.clienteEmail,
+        fechaCreacion: new Date(),
+        fechaVencimiento: nuevaFactura.fechaVencimiento
+          ? new Date(nuevaFactura.fechaVencimiento)
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        cliente: ordenSeleccionada.cliente,
         items: ordenSeleccionada.items,
-        subtotal: ordenSeleccionada.total * 0.85, // Asumiendo 15% de impuestos
-        impuestos: ordenSeleccionada.total * 0.15,
-        total: ordenSeleccionada.total,
+        subtotal: Number.parseFloat(ordenSeleccionada.totales?.baseImponible || 0),
+        impuestos: Number.parseFloat(ordenSeleccionada.totales?.impuestos || 0),
+        total: Number.parseFloat(ordenSeleccionada.totales?.total || 0),
       }
 
-      await addDoc(collection(db, "facturas"), facturaData)
+      const facturasRef = collection(db, "tiendas", tiendaActual.id, "facturas")
+      await addDoc(facturasRef, facturaData)
 
       // Actualizar estado de la orden
-      await updateDoc(doc(db, "ordenes", nuevaFactura.ordenId), {
+      await updateDoc(doc(db, "tiendas", tiendaActual.id, "ordenes", nuevaFactura.ordenId), {
         facturado: true,
-        fechaFacturacion: new Date().toISOString(),
+        numeroFactura,
+        fechaFacturacion: new Date(),
       })
 
       setMostrarNuevaFactura(false)
@@ -172,27 +221,38 @@ export function PaginaFacturacion() {
     }
   }
 
-  const procesarPagoStripe = async (facturaId) => {
-    try {
-      // Aquí iría la integración real con Stripe
-      // Por ahora simulamos el proceso
-      console.log("Procesando pago con Stripe para factura:", facturaId)
+  const iniciarPagoStripe = (factura) => {
+    if (!configuracionStripe.activo || !configuracionStripe.publishableKey) {
+      alert("Stripe no está configurado correctamente")
+      return
+    }
+    setFacturaParaPago(factura)
+    setMostrarPago(true)
+  }
 
-      // Simular respuesta exitosa de Stripe
-      await updateDoc(doc(db, "facturas", facturaId), {
+  const manejarPagoExitoso = async (datosPago) => {
+    try {
+      await updateDoc(doc(db, "tiendas", tiendaActual.id, "facturas", facturaParaPago.id), {
         estado: "pagado",
-        fechaPago: new Date().toISOString(),
+        fechaPago: new Date(),
         metodoPago: "stripe",
-        transaccionId: `stripe_${Date.now()}`,
+        transaccionId: datosPago.transaccionId,
+        montoPagado: datosPago.monto,
+        monedaPago: datosPago.moneda,
       })
 
       cargarFacturas()
       calcularEstadisticas()
-      alert("Pago procesado exitosamente")
+      setMostrarPago(false)
+      setFacturaParaPago(null)
     } catch (error) {
-      console.error("Error procesando pago:", error)
-      alert("Error procesando el pago")
+      console.error("Error actualizando factura:", error)
     }
+  }
+
+  const manejarErrorPago = (error) => {
+    console.error("Error en pago:", error)
+    alert("Error procesando el pago. Por favor, inténtalo de nuevo.")
   }
 
   const generarPDF = (factura) => {
@@ -203,9 +263,9 @@ export function PaginaFacturacion() {
 
   const enviarFactura = async (facturaId) => {
     try {
-      await updateDoc(doc(db, "facturas", facturaId), {
+      await updateDoc(doc(db, "tiendas", tiendaActual.id, "facturas", facturaId), {
         enviado: true,
-        fechaEnvio: new Date().toISOString(),
+        fechaEnvio: new Date(),
       })
       cargarFacturas()
       alert("Factura enviada por email")
@@ -271,7 +331,7 @@ export function PaginaFacturacion() {
                       .filter((o) => !o.facturado)
                       .map((orden) => (
                         <SelectItem key={orden.id} value={orden.id}>
-                          {orden.numeroOrden} - {orden.clienteNombre} - ${orden.total}
+                          {orden.numero} - {orden.cliente?.nombre} - €{orden.totales?.total}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -326,7 +386,7 @@ export function PaginaFacturacion() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${estadisticas.totalFacturado.toLocaleString()}</div>
+            <div className="text-2xl font-bold">€{estadisticas.totalFacturado.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -353,7 +413,7 @@ export function PaginaFacturacion() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${estadisticas.ingresosMes.toLocaleString()}</div>
+            <div className="text-2xl font-bold">€{estadisticas.ingresosMes.toLocaleString()}</div>
           </CardContent>
         </Card>
       </div>
@@ -361,7 +421,7 @@ export function PaginaFacturacion() {
       <Tabs defaultValue="facturas" className="space-y-4">
         <TabsList>
           <TabsTrigger value="facturas">Facturas</TabsTrigger>
-          <TabsTrigger value="pagos">Pagos</TabsTrigger>
+          <TabsTrigger value="pagos">Configuración de Pagos</TabsTrigger>
           <TabsTrigger value="reportes">Reportes</TabsTrigger>
         </TabsList>
 
@@ -374,8 +434,8 @@ export function PaginaFacturacion() {
                     <div>
                       <CardTitle className="text-lg">{factura.numeroFactura}</CardTitle>
                       <CardDescription>
-                        Cliente: {factura.clienteNombre} • Creada:{" "}
-                        {new Date(factura.fechaCreacion).toLocaleDateString()}
+                        Cliente: {factura.cliente?.nombre} • Creada:{" "}
+                        {new Date(factura.fechaCreacion?.seconds * 1000).toLocaleDateString()}
                       </CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -383,9 +443,9 @@ export function PaginaFacturacion() {
                         {factura.estado.charAt(0).toUpperCase() + factura.estado.slice(1)}
                       </Badge>
                       <div className="text-right">
-                        <div className="text-2xl font-bold">${factura.total.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">€{factura.total?.toLocaleString()}</div>
                         <div className="text-sm text-gray-500">
-                          Vence: {new Date(factura.fechaVencimiento).toLocaleDateString()}
+                          Vence: {new Date(factura.fechaVencimiento?.seconds * 1000).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -394,7 +454,8 @@ export function PaginaFacturacion() {
                 <CardContent>
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-gray-600">
-                      Subtotal: ${factura.subtotal.toLocaleString()} • Impuestos: ${factura.impuestos.toLocaleString()}
+                      Subtotal: €{factura.subtotal?.toLocaleString()} • Impuestos: €
+                      {factura.impuestos?.toLocaleString()}
                     </div>
                     <div className="flex space-x-2">
                       <Button variant="outline" size="sm" onClick={() => generarPDF(factura)}>
@@ -406,7 +467,7 @@ export function PaginaFacturacion() {
                         Enviar
                       </Button>
                       {factura.estado === "pendiente" && (
-                        <Button size="sm" onClick={() => procesarPagoStripe(factura.id)}>
+                        <Button size="sm" onClick={() => iniciarPagoStripe(factura)}>
                           <CreditCard className="w-4 h-4 mr-1" />
                           Procesar Pago
                         </Button>
@@ -426,23 +487,93 @@ export function PaginaFacturacion() {
         <TabsContent value="pagos" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Configuración de Pagos</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Configuración de Stripe
+              </CardTitle>
               <CardDescription>Configura los métodos de pago y integración con Stripe</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                <div className="flex items-center gap-2">
+                  {configuracionStripe.activo ? (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-orange-500" />
+                  )}
+                  <span className="font-medium">
+                    Estado: {configuracionStripe.activo ? "Configurado" : "Pendiente configuración"}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  {configuracionStripe.activo
+                    ? "Stripe está configurado y listo para procesar pagos"
+                    : "Completa la configuración para habilitar pagos con Stripe"}
+                </p>
+              </div>
+
               <div>
                 <Label>Clave Pública de Stripe</Label>
-                <Input placeholder="pk_test_..." />
+                <Input
+                  placeholder="pk_test_..."
+                  value={configuracionStripe.publishableKey}
+                  onChange={(e) =>
+                    setConfiguracionStripe((prev) => ({
+                      ...prev,
+                      publishableKey: e.target.value,
+                    }))
+                  }
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Comienza con pk_test_ para pruebas o pk_live_ para producción
+                </p>
               </div>
               <div>
                 <Label>Clave Secreta de Stripe</Label>
-                <Input type="password" placeholder="sk_test_..." />
+                <Input
+                  type="password"
+                  placeholder="sk_test_..."
+                  value={configuracionStripe.secretKey}
+                  onChange={(e) =>
+                    setConfiguracionStripe((prev) => ({
+                      ...prev,
+                      secretKey: e.target.value,
+                    }))
+                  }
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Comienza con sk_test_ para pruebas o sk_live_ para producción
+                </p>
               </div>
               <div>
                 <Label>Webhook Endpoint</Label>
-                <Input placeholder="https://tu-dominio.com/webhook/stripe" />
+                <Input
+                  placeholder="https://tu-dominio.com/webhook/stripe"
+                  value={configuracionStripe.webhookEndpoint}
+                  onChange={(e) =>
+                    setConfiguracionStripe((prev) => ({
+                      ...prev,
+                      webhookEndpoint: e.target.value,
+                    }))
+                  }
+                />
+                <p className="text-xs text-gray-500 mt-1">URL donde Stripe enviará las notificaciones de eventos</p>
               </div>
-              <Button>Guardar Configuración</Button>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="activarStripe"
+                  checked={configuracionStripe.activo}
+                  onChange={(e) =>
+                    setConfiguracionStripe((prev) => ({
+                      ...prev,
+                      activo: e.target.checked,
+                    }))
+                  }
+                />
+                <Label htmlFor="activarStripe">Activar integración con Stripe</Label>
+              </div>
+              <Button onClick={guardarConfiguracionStripe}>Guardar Configuración</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -458,11 +589,11 @@ export function PaginaFacturacion() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Este mes:</span>
-                    <span className="font-bold">${estadisticas.ingresosMes.toLocaleString()}</span>
+                    <span className="font-bold">€{estadisticas.ingresosMes.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Total:</span>
-                    <span className="font-bold">${estadisticas.totalFacturado.toLocaleString()}</span>
+                    <span className="font-bold">€{estadisticas.totalFacturado.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -489,6 +620,23 @@ export function PaginaFacturacion() {
         </TabsContent>
       </Tabs>
 
+      <Dialog open={mostrarPago} onOpenChange={setMostrarPago}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Procesar Pago</DialogTitle>
+            <DialogDescription>Procesa el pago de la factura {facturaParaPago?.numeroFactura}</DialogDescription>
+          </DialogHeader>
+          {facturaParaPago && (
+            <ComponentePagoStripe
+              factura={facturaParaPago}
+              configuracionStripe={configuracionStripe}
+              onPagoExitoso={manejarPagoExitoso}
+              onPagoError={manejarErrorPago}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de detalle de factura */}
       {facturaSeleccionada && (
         <Dialog open={!!facturaSeleccionada} onOpenChange={() => setFacturaSeleccionada(null)}>
@@ -500,13 +648,15 @@ export function PaginaFacturacion() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-semibold">Información del Cliente</h3>
-                  <p>{facturaSeleccionada.clienteNombre}</p>
-                  <p>{facturaSeleccionada.clienteEmail}</p>
+                  <p>{facturaSeleccionada.cliente?.nombre}</p>
+                  <p>{facturaSeleccionada.cliente?.email}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold">Detalles de Facturación</h3>
-                  <p>Fecha: {new Date(facturaSeleccionada.fechaCreacion).toLocaleDateString()}</p>
-                  <p>Vencimiento: {new Date(facturaSeleccionada.fechaVencimiento).toLocaleDateString()}</p>
+                  <p>Fecha: {new Date(facturaSeleccionada.fechaCreacion?.seconds * 1000).toLocaleDateString()}</p>
+                  <p>
+                    Vencimiento: {new Date(facturaSeleccionada.fechaVencimiento?.seconds * 1000).toLocaleDateString()}
+                  </p>
                   <p>Estado: {facturaSeleccionada.estado}</p>
                 </div>
               </div>
@@ -525,10 +675,10 @@ export function PaginaFacturacion() {
                     <tbody>
                       {facturaSeleccionada.items?.map((item, index) => (
                         <tr key={index} className="border-t">
-                          <td className="p-3">{item.descripcion}</td>
+                          <td className="p-3">{item.nombreProducto}</td>
                           <td className="text-right p-3">{item.cantidad}</td>
-                          <td className="text-right p-3">${item.precio}</td>
-                          <td className="text-right p-3">${item.total}</td>
+                          <td className="text-right p-3">€{item.precioCalculado?.toFixed(2)}</td>
+                          <td className="text-right p-3">€{(item.precioCalculado * item.cantidad)?.toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -536,9 +686,9 @@ export function PaginaFacturacion() {
                 </div>
               </div>
               <div className="text-right space-y-1">
-                <div>Subtotal: ${facturaSeleccionada.subtotal.toLocaleString()}</div>
-                <div>Impuestos: ${facturaSeleccionada.impuestos.toLocaleString()}</div>
-                <div className="text-xl font-bold">Total: ${facturaSeleccionada.total.toLocaleString()}</div>
+                <div>Subtotal: €{facturaSeleccionada.subtotal?.toLocaleString()}</div>
+                <div>Impuestos: €{facturaSeleccionada.impuestos?.toLocaleString()}</div>
+                <div className="text-xl font-bold">Total: €{facturaSeleccionada.total?.toLocaleString()}</div>
               </div>
             </div>
           </DialogContent>
