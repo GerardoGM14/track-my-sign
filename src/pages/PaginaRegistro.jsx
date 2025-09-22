@@ -15,17 +15,18 @@ export function PaginaRegistro() {
     confirmarPassword: "",
   })
   const [cargando, setCargando] = useState(false)
+  const [cargandoGoogle, setCargandoGoogle] = useState(false)
   const [error, setError] = useState("")
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isEntering, setIsEntering] = useState(true)
 
-  const { registrar } = useContextoAuth()
+  const { registrar, iniciarSesionConGoogle, usuarioActual } = useContextoAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
     setTimeout(() => {
       setIsEntering(false)
-    }, 100)
+    }, 800)
   }, [])
 
   const manejarSubmit = async (e) => {
@@ -62,10 +63,37 @@ export function PaginaRegistro() {
     e.preventDefault()
     setIsTransitioning(true)
 
-    // Aplicar fadeOut inmediatamente
     setTimeout(() => {
       navigate("/login")
-    }, 600) // Esperar a que termine el fadeOut
+    }, 800)
+  }
+
+  const manejarLoginGoogle = async () => {
+    setCargandoGoogle(true)
+    setError("")
+
+    try {
+      await iniciarSesionConGoogle()
+      redirigirSegunRol()
+    } catch (error) {
+      setError(error.message || "Error al iniciar sesión con Google")
+    } finally {
+      setCargandoGoogle(false)
+    }
+  }
+
+  const redirigirSegunRol = () => {
+    if (usuarioActual?.rol === "superadmin") {
+      navigate("/superadmin/dashboard")
+    } else if (usuarioActual?.rol === "admin" && usuarioActual?.tiendaId) {
+      navigate(`/${usuarioActual.tiendaId}/dashboard`)
+    } else if (usuarioActual?.rol === "admin" && !usuarioActual?.tiendaId) {
+      navigate("/onboarding")
+    } else if (usuarioActual?.rol === "empleado" && usuarioActual?.tiendaId) {
+      navigate(`/${usuarioActual.tiendaId}/dashboard`)
+    } else {
+      navigate("/cliente/dashboard")
+    }
   }
 
   return (
@@ -82,7 +110,7 @@ export function PaginaRegistro() {
         <div
           className="fixed inset-0 bg-white z-50"
           style={{
-            animation: "fadeIn 0.6s ease-out forwards",
+            animation: "fadeIn 0.8s linear forwards",
           }}
         />
       )}
@@ -105,11 +133,7 @@ export function PaginaRegistro() {
         
         .page-content {
           animation: ${
-            isTransitioning
-              ? "fadeOut 0.6s ease-out forwards"
-              : isEntering
-                ? "pageEnter 0.6s ease-out forwards"
-                : "none"
+            isTransitioning ? "fadeOut 0.8s linear forwards" : isEntering ? "pageEnter 0.8s linear forwards" : "none"
           };
         }
       `}</style>
@@ -198,7 +222,7 @@ export function PaginaRegistro() {
                   id="recordarme"
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <label htmlFor="recordarme" className="ml-2 text-sm text-gray-700 flex items-center">
+                <label htmlFor="recordarme" className="ml-2 text-sm font-bold text-gray-700 flex items-center">
                   Recordarme
                   <div className="ml-1 w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 text-xs font-bold">i</span>
@@ -233,6 +257,8 @@ export function PaginaRegistro() {
               type="button"
               variant="outline"
               className="w-full border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-md transition-colors duration-200 flex items-center justify-center"
+              onClick={manejarLoginGoogle}
+              disabled={cargandoGoogle}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
@@ -252,7 +278,7 @@ export function PaginaRegistro() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Google
+              {cargandoGoogle ? "Conectando..." : "Google"}
             </Button>
           </div>
 

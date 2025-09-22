@@ -32,7 +32,7 @@ export function PaginaLogin() {
     setAnimacionKey((prev) => prev + 1)
     setTimeout(() => {
       setIsEntering(false)
-    }, 100)
+    }, 800)
   }, [])
 
   const continuarAPassword = (e) => {
@@ -107,7 +107,7 @@ export function PaginaLogin() {
       navigate("/register", {
         state: { planSeleccionado, fromLogin: true },
       })
-    }, 600)
+    }, 800)
   }
 
   return (
@@ -116,7 +116,7 @@ export function PaginaLogin() {
         <div
           className="fixed inset-0 bg-white z-50"
           style={{
-            animation: "fadeIn 0.6s ease-out forwards",
+            animation: "fadeIn 0.8s linear forwards",
           }}
         />
       )}
@@ -139,11 +139,7 @@ export function PaginaLogin() {
         
         .page-content {
           animation: ${
-            isTransitioning
-              ? "fadeOut 0.6s ease-out forwards"
-              : isEntering
-                ? "pageEnter 0.6s ease-out forwards"
-                : "none"
+            isTransitioning ? "fadeOut 0.8s linear forwards" : isEntering ? "pageEnter 0.8s linear forwards" : "none"
           };
         }
       `}</style>
