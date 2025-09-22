@@ -53,3 +53,6 @@ graph TD;
         Firestore-->Stripe;
     end
     Stripe-->Pagos[(Pagos Online)];
+
+## ⚙️ Instalación y ejecución
+Clonar el repositorio
