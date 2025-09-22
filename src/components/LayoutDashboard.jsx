@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarInset } from "../../components/ui/sidebar"
+import { SidebarProvider, SidebarInset } from "../components/ui/sidebar"
 import SidebarTienda from "./SidebarTienda"
 
 export default function LayoutDashboard({ children }) {
