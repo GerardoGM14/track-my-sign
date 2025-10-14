@@ -14,13 +14,13 @@ import {
   FaCog,
   FaChartLine,
   FaHandshake,
-  FaShield,
   FaHeadset,
   FaRocket,
   FaCreditCard,
   FaGlobe,
   FaTools,
 } from "react-icons/fa"
+import { FaShieldCat } from "react-icons/fa6";
 
 export function PaginaPreciosSaaS() {
   const navigate = useNavigate()
@@ -31,7 +31,7 @@ export function PaginaPreciosSaaS() {
   const [tecnologiaActual, setTecnologiaActual] = useState(0)
 
   const beneficios = [
-    { icono: FaShield, texto: "Pago Seguro", descripcion: "Encriptación SSL de nivel bancario" },
+    { icono: FaShieldCat, texto: "Pago Seguro", descripcion: "Encriptación SSL de nivel bancario" },
     { icono: FaHeadset, texto: "Soporte en Español", descripcion: "Atención 24/7 en tu idioma" },
     { icono: FaRocket, texto: "Setup Gratuito", descripcion: "Configuración sin costo adicional" },
     { icono: FaCreditCard, texto: "Sin Comisiones Ocultas", descripcion: "Precios transparentes siempre" },
