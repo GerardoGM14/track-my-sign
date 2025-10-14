@@ -14,13 +14,13 @@ import {
   FaCog,
   FaChartLine,
   FaHandshake,
+  FaShield,
   FaHeadset,
   FaRocket,
   FaCreditCard,
   FaGlobe,
   FaTools,
 } from "react-icons/fa"
-import { FaShieldCat } from "react-icons/fa6"
 
 export function PaginaPreciosSaaS() {
   const navigate = useNavigate()
@@ -28,14 +28,46 @@ export function PaginaPreciosSaaS() {
   const [isEntering, setIsEntering] = useState(true)
   const [planElegido, setPlanElegido] = useState(null)
   const [carruselIndex, setCarruselIndex] = useState(0)
+  const [tecnologiaActual, setTecnologiaActual] = useState(0)
 
   const beneficios = [
-    { icono: FaShieldCat, texto: "Pago Seguro", descripcion: "Encriptación SSL de nivel bancario" },
+    { icono: FaShield, texto: "Pago Seguro", descripcion: "Encriptación SSL de nivel bancario" },
     { icono: FaHeadset, texto: "Soporte en Español", descripcion: "Atención 24/7 en tu idioma" },
     { icono: FaRocket, texto: "Setup Gratuito", descripcion: "Configuración sin costo adicional" },
     { icono: FaCreditCard, texto: "Sin Comisiones Ocultas", descripcion: "Precios transparentes siempre" },
     { icono: FaGlobe, texto: "Acceso Global", descripcion: "Disponible en todo el mundo" },
     { icono: FaTools, texto: "Herramientas Avanzadas", descripcion: "Todo lo que necesitas incluido" },
+  ]
+
+  const tecnologias = [
+    {
+      nombre: "TailwindCSS",
+      descripcion:
+        "Framework de CSS utilitario que nos permite crear interfaces modernas y responsivas de manera rápida y eficiente, garantizando un diseño consistente en toda la aplicación.",
+      imagen: "/-css-logo.png",
+      color: "from-cyan-50 to-blue-100",
+    },
+    {
+      nombre: "React",
+      descripcion:
+        "Biblioteca de JavaScript para construir interfaces de usuario interactivas y dinámicas, proporcionando una experiencia fluida y moderna para nuestros usuarios.",
+      imagen: "/react-logo.png",
+      color: "from-blue-50 to-cyan-100",
+    },
+    {
+      nombre: "Firebase",
+      descripcion:
+        "Plataforma de desarrollo de aplicaciones que nos proporciona una base de datos en tiempo real, autenticación segura y hosting confiable para tu aplicación.",
+      imagen: "/firebase-logo.png",
+      color: "from-orange-50 to-yellow-100",
+    },
+    {
+      nombre: "Stripe",
+      descripcion:
+        "Procesador de pagos líder mundial que garantiza transacciones seguras y confiables, soportando múltiples métodos de pago y monedas internacionales.",
+      imagen: "/stripe-logo.png",
+      color: "from-purple-50 to-indigo-100",
+    },
   ]
 
   useEffect(() => {
@@ -124,6 +156,14 @@ export function PaginaPreciosSaaS() {
   const manejarSeleccionPlan = (planId) => {
     setPlanElegido(planId)
     console.log(`Plan seleccionado: ${planId}`)
+  }
+
+  const navegarTecnologia = (direccion) => {
+    if (direccion === "anterior") {
+      setTecnologiaActual((prev) => (prev === 0 ? tecnologias.length - 1 : prev - 1))
+    } else {
+      setTecnologiaActual((prev) => (prev + 1) % tecnologias.length)
+    }
   }
 
   const handleNavigateBack = (e) => {
@@ -312,53 +352,73 @@ export function PaginaPreciosSaaS() {
 
           <div className="mb-16">
             <div className="text-center mb-12">
-              <h3 className="text-4xl font-bold text-gray-800 mb-4 leading-tight">
-                Construido con las Mejores Tecnologías para
+              <h3 className="text-4xl font-bold text-gray-800 mb-6 leading-tight">
+                Cómo nuestras tecnologías impulsan tu negocio
               </h3>
-              <h3 className="text-4xl font-bold text-gray-800 mb-6 leading-tight">Impulsar tu Innovación</h3>
             </div>
 
-            <div className="bg-white rounded-3xl shadow-xl p-12">
-              <div className="flex items-center justify-between">
-                {/* Botón navegación izquierda */}
-                <button className="w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200">
-                  <FaArrowLeft className="h-5 w-5 text-gray-600" />
-                </button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {tecnologias.slice(0, 3).map((tech, index) => {
+                const techIndex = (tecnologiaActual + index) % tecnologias.length
+                const tecnologia = tecnologias[techIndex]
 
-                {/* Contenido principal */}
-                <div className="flex-1 flex items-center justify-center gap-16">
-                  {/* Tarjeta de tecnología destacada */}
-                  <div className="w-80 h-64 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-3xl flex items-center justify-center shadow-lg">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-white rounded-2xl flex items-center justify-center shadow-md">
-                        <img src="/-css-logo.png" alt="TailwindCSS" className="h-16 w-16" />
+                return (
+                  <div
+                    key={techIndex}
+                    className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
+                  >
+                    <div
+                      className={`h-48 bg-gradient-to-br ${tecnologia.color} flex items-center justify-center relative`}
+                    >
+                      <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                        <img
+                          src={tecnologia.imagen || "/placeholder.svg"}
+                          alt={tecnologia.nombre}
+                          className="h-12 w-12 object-contain"
+                        />
+                      </div>
+                      <div className="absolute bottom-4 left-6">
+                        <h4 className="text-xl font-bold text-gray-800">{tecnologia.nombre}</h4>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Información de la tecnología */}
-                  <div className="max-w-md">
-                    <h4 className="text-3xl font-bold text-gray-800 mb-4">TailwindCSS</h4>
-                    <p className="text-lg text-gray-600 leading-relaxed mb-6">
-                      Framework de CSS utilitario que nos permite crear interfaces modernas y responsivas de manera
-                      rápida y eficiente, garantizando un diseño consistente en toda la aplicación.
-                    </p>
+                    <div className="p-6">
+                      <h5 className="text-lg font-semibold text-gray-800 mb-3">
+                        Cómo {tecnologia.nombre} potencia tu aplicación
+                      </h5>
+                      <p className="text-gray-600 leading-relaxed text-sm mb-4">{tecnologia.descripcion}</p>
+                    </div>
                   </div>
-                </div>
+                )
+              })}
+            </div>
 
-                {/* Botón navegación derecha */}
-                <button className="w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200">
-                  <FaArrowLeft className="h-5 w-5 text-gray-600 transform rotate-180" />
-                </button>
+            <div className="flex justify-center items-center mt-8 space-x-4">
+              <button
+                onClick={() => navegarTecnologia("anterior")}
+                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200"
+              >
+                <FaArrowLeft className="h-4 w-4 text-gray-600" />
+              </button>
+
+              <div className="flex space-x-2">
+                {tecnologias.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setTecnologiaActual(index)}
+                    className={`w-3 h-3 rounded-full transition-colors duration-200 ${
+                      index === tecnologiaActual ? "bg-blue-500" : "bg-gray-300"
+                    }`}
+                  />
+                ))}
               </div>
 
-              {/* Indicadores de navegación */}
-              <div className="flex justify-center mt-8 space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-              </div>
+              <button
+                onClick={() => navegarTecnologia("siguiente")}
+                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200"
+              >
+                <FaArrowLeft className="h-4 w-4 text-gray-600 transform rotate-180" />
+              </button>
             </div>
           </div>
 
