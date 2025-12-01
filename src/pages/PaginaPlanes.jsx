@@ -4,7 +4,8 @@ import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { CheckCircle, ArrowLeft } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
 import { useState } from "react"
 
 export default function PaginaPlanes() {
@@ -94,11 +95,11 @@ export default function PaginaPlanes() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Link to="/login">
+            <NavLinkViewTransition to="/login">
               <Button variant="ghost" className="text-foreground hover:text-primary">
                 ¿Ya tienes cuenta?
               </Button>
-            </Link>
+            </NavLinkViewTransition>
           </div>
         </div>
       </header>

@@ -1,5 +1,5 @@
 "use client"
-import { Link, useLocation, useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
 import {
   LayoutDashboard,
   Package,
@@ -28,6 +28,7 @@ import {
   SidebarSeparator,
 } from "../components/ui/sidebar"
 import { useAuth } from "../contexts/ContextoAuth"
+import { NavLinkViewTransition } from "./NavLinkViewTransition"
 
 export default function SidebarTienda() {
   const location = useLocation()
@@ -169,10 +170,10 @@ export default function SidebarTienda() {
                 return (
                   <SidebarMenuItem key={item.titulo}>
                     <SidebarMenuButton asChild isActive={estaActivo}>
-                      <Link to={item.url}>
+                      <NavLinkViewTransition to={item.url}>
                         <IconoComponente className="h-4 w-4" />
                         <span>{item.titulo}</span>
-                      </Link>
+                      </NavLinkViewTransition>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
@@ -195,10 +196,10 @@ export default function SidebarTienda() {
                     return (
                       <SidebarMenuItem key={item.titulo}>
                         <SidebarMenuButton asChild isActive={estaActivo}>
-                          <Link to={item.url}>
+                          <NavLinkViewTransition to={item.url}>
                             <IconoComponente className="h-4 w-4" />
                             <span>{item.titulo}</span>
-                          </Link>
+                          </NavLinkViewTransition>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     )
@@ -223,10 +224,10 @@ export default function SidebarTienda() {
                     return (
                       <SidebarMenuItem key={item.titulo}>
                         <SidebarMenuButton asChild isActive={estaActivo}>
-                          <Link to={item.url}>
+                          <NavLinkViewTransition to={item.url}>
                             <IconoComponente className="h-4 w-4" />
                             <span>{item.titulo}</span>
-                          </Link>
+                            </NavLinkViewTransition>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     )

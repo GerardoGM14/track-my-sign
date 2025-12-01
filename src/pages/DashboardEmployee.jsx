@@ -4,6 +4,7 @@ import { FileText, ClipboardList, Users, Clock, CheckCircle, AlertCircle } from 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
+import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
 
 export default function DashboardEmployee() {
   const { slugTienda } = useParams()
@@ -49,7 +50,7 @@ export default function DashboardEmployee() {
           <p className="text-muted-foreground">Tus tareas y responsabilidades del día</p>
         </div>
         <Button asChild>
-          <Link to={`/${slugTienda}/cotizaciones`}>Ver Cotizaciones</Link>
+          <NavLinkViewTransition to={`/${slugTienda}/cotizaciones`}>Ver Cotizaciones</NavLinkViewTransition>
         </Button>
       </div>
 
@@ -133,22 +134,22 @@ export default function DashboardEmployee() {
           <CardContent>
             <div className="space-y-2">
               <Button variant="outline" asChild className="w-full justify-start bg-transparent">
-                <Link to={`/${slugTienda}/cotizaciones`}>
+                <NavLinkViewTransition to={`/${slugTienda}/cotizaciones`}>
                   <FileText className="mr-2 h-4 w-4" />
                   Ver Mis Cotizaciones
-                </Link>
+                </NavLinkViewTransition>
               </Button>
               <Button variant="outline" asChild className="w-full justify-start bg-transparent">
-                <Link to={`/${slugTienda}/ordenes`}>
+                <NavLinkViewTransition to={`/${slugTienda}/ordenes`}>
                   <ClipboardList className="mr-2 h-4 w-4" />
                   Gestionar Órdenes
-                </Link>
+                </NavLinkViewTransition>
               </Button>
               <Button variant="outline" asChild className="w-full justify-start bg-transparent">
-                <Link to={`/${slugTienda}/clientes`}>
+                <NavLinkViewTransition to={`/${slugTienda}/clientes`}>
                   <Users className="mr-2 h-4 w-4" />
                   Contactar Clientes
-                </Link>
+                </NavLinkViewTransition>
               </Button>
             </div>
           </CardContent>

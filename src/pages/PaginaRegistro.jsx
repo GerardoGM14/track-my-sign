@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { useContextoAuth } from "../contexts/ContextoAuth"
+import mountain from "../assets/mountain.svg"
 
 export function PaginaRegistro() {
   const [datosFormulario, setDatosFormulario] = useState({
@@ -17,17 +19,9 @@ export function PaginaRegistro() {
   const [cargando, setCargando] = useState(false)
   const [cargandoGoogle, setCargandoGoogle] = useState(false)
   const [error, setError] = useState("")
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const [isEntering, setIsEntering] = useState(true)
 
   const { registrar, iniciarSesionConGoogle, usuarioActual } = useContextoAuth()
   const navigate = useNavigate()
-
-  useEffect(() => {
-    setTimeout(() => {
-      setIsEntering(false)
-    }, 800)
-  }, [])
 
   const manejarSubmit = async (e) => {
     e.preventDefault()
@@ -61,11 +55,7 @@ export function PaginaRegistro() {
 
   const handleNavigateToLogin = (e) => {
     e.preventDefault()
-    setIsTransitioning(true)
-
-    setTimeout(() => {
-      navigate("/login")
-    }, 800)
+    navigate("/login")
   }
 
   const manejarLoginGoogle = async () => {
@@ -89,7 +79,7 @@ export function PaginaRegistro() {
 
   return (
     <div
-      className="min-h-screen bg-gray-50 flex items-center justify-center p-4"
+      className="min-h-screen bg-gray-50 flex items-center justify-center p-4 relative overflow-hidden"
       style={{
         backgroundImage: `url('/images/login-background.jpg')`,
         backgroundSize: "cover",
@@ -97,39 +87,20 @@ export function PaginaRegistro() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      {isTransitioning && (
-        <div
-          className="fixed inset-0 bg-white z-50"
-          style={{
-            animation: "fadeIn 0.8s linear forwards",
-          }}
-        />
-      )}
+      {/* Ilustración decorativa inferior derecha */}
+      <img
+        src={mountain}
+        alt="Decoración montañosa"
+        className="pointer-events-none select-none fixed bottom-0 right-0 w-[360px] md:w-[500px] opacity-100 blur-[0px] z-0"
+      />
+      {/* Ilustración decorativa inferior izquierda en simetría */}
+      <img
+        src={mountain}
+        alt="Decoración montañosa reflejada"
+        className="pointer-events-none select-none fixed bottom-0 left-0 w-[360px] md:w-[500px] opacity-100 blur-[0px] z-0 transform -scale-x-100"
+      />
 
-      <style jsx>{`
-        @keyframes fadeIn {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        
-        @keyframes fadeOut {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-        
-        @keyframes pageEnter {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        
-        .page-content {
-          animation: ${
-            isTransitioning ? "fadeOut 0.8s linear forwards" : isEntering ? "pageEnter 0.8s linear forwards" : "none"
-          };
-        }
-      `}</style>
-
-      <div className={`w-full max-w-md page-content`}>
+      <div className="w-full max-w-md relative z-10">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-6">
@@ -275,21 +246,21 @@ export function PaginaRegistro() {
 
           <div className="text-center text-sm text-gray-600 mt-6">
             <p>
-              <a
-                href="/login"
-                onClick={handleNavigateToLogin}
-                className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
-              >
+            <NavLinkViewTransition
+              to="/login"
+              onClick={handleNavigateToLogin}
+              className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
+            >
                 ¿Ya tienes cuenta?
-              </a>
+            </NavLinkViewTransition>
               {" • "}
-              <a
-                href="/login"
-                onClick={handleNavigateToLogin}
-                className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
-              >
+            <NavLinkViewTransition
+              to="/login"
+              onClick={handleNavigateToLogin}
+              className="text-blue-600 hover:text-blue-700 font-medium transition-colors duración-200"
+            >
                 Iniciar sesión
-              </a>
+            </NavLinkViewTransition>
             </p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { FileText, Clock, CheckCircle, Eye, Download } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
+import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
 
 export default function DashboardCustomer() {
   const { slugTienda } = useParams()
@@ -68,7 +69,7 @@ export default function DashboardCustomer() {
           <p className="text-muted-foreground">Seguimiento de tus proyectos y cotizaciones</p>
         </div>
         <Button asChild>
-          <Link to={`/${slugTienda}/cotizaciones/solicitar`}>Solicitar Cotización</Link>
+          <NavLinkViewTransition to={`/${slugTienda}/cotizaciones/solicitar`}>Solicitar Cotización</NavLinkViewTransition>
         </Button>
       </div>
 
@@ -189,16 +190,16 @@ export default function DashboardCustomer() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <Button variant="outline" asChild className="h-20 flex-col bg-transparent">
-              <Link to={`/${slugTienda}/cotizaciones/solicitar`}>
+              <NavLinkViewTransition to={`/${slugTienda}/cotizaciones/solicitar`}>
                 <FileText className="mb-2 h-6 w-6" />
                 Solicitar Nueva Cotización
-              </Link>
+              </NavLinkViewTransition>
             </Button>
             <Button variant="outline" asChild className="h-20 flex-col bg-transparent">
-              <Link to={`/${slugTienda}/cotizaciones`}>
+              <NavLinkViewTransition to={`/${slugTienda}/cotizaciones`}>
                 <Eye className="mb-2 h-6 w-6" />
                 Ver Todas Mis Cotizaciones
-              </Link>
+              </NavLinkViewTransition>
             </Button>
           </div>
         </CardContent>

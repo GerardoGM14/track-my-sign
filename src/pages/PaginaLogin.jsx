@@ -1,13 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useNavigate, useLocation, Link } from "react-router-dom"
+import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Badge } from "../components/ui/badge"
 import { ArrowLeft, Info, ArrowRight } from "lucide-react"
 import { useContextoAuth } from "../contexts/ContextoAuth"
+import mountain from "../assets/mountain.svg"
 
 export function PaginaLogin() {
   const [email, setEmail] = useState("")
@@ -18,8 +20,6 @@ export function PaginaLogin() {
   const [error, setError] = useState("")
   const [pasoActual, setPasoActual] = useState(1) // 1 = email, 2 = password
   const [animacionKey, setAnimacionKey] = useState(0) // Para forzar re-animación
-  const [isTransitioning, setIsTransitioning] = useState(false)
-  const [isEntering, setIsEntering] = useState(true)
 
   const { iniciarSesion, iniciarSesionConGoogle, usuarioActual } = useContextoAuth()
   const navigate = useNavigate()
@@ -27,13 +27,6 @@ export function PaginaLogin() {
 
   const planSeleccionado = location.state?.planSeleccionado || localStorage.getItem("planSeleccionado")
   const vieneDeRegistro = location.state?.fromPlanes || location.state?.fromRegister
-
-  useEffect(() => {
-    setAnimacionKey((prev) => prev + 1)
-    setTimeout(() => {
-      setIsEntering(false)
-    }, 800)
-  }, [])
 
   const continuarAPassword = (e) => {
     e.preventDefault()
@@ -101,49 +94,25 @@ export function PaginaLogin() {
 
   const handleNavigateToRegister = (e) => {
     e.preventDefault()
-    setIsTransitioning(true)
-
-    setTimeout(() => {
-      navigate("/register", {
-        state: { planSeleccionado, fromLogin: true },
-      })
-    }, 800)
+    navigate("/register", {
+      state: { planSeleccionado, fromLogin: true },
+    })
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 relative overflow-hidden">
-      {isTransitioning && (
-        <div
-          className="fixed inset-0 bg-white z-50"
-          style={{
-            animation: "fadeIn 0.8s linear forwards",
-          }}
-        />
-      )}
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        
-        @keyframes fadeOut {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-        
-        @keyframes pageEnter {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        
-        .page-content {
-          animation: ${
-            isTransitioning ? "fadeOut 0.8s linear forwards" : isEntering ? "pageEnter 0.8s linear forwards" : "none"
-          };
-        }
-      `}</style>
-
+      {/* Ilustración decorativa inferior derecha */}
+      <img
+        src={mountain}
+        alt="Decoración montañosa"
+        className="pointer-events-none select-none fixed bottom-0 right-0 w-[360px] md:w-[500px] opacity-100 blur-[0px] z-0"
+      />
+      {/* Ilustración decorativa inferior izquierda en simetría */}
+      <img
+        src={mountain}
+        alt="Decoración montañosa reflejada"
+        className="pointer-events-none select-none fixed bottom-0 left-0 w-[360px] md:w-[500px] opacity-100 blur-[0px] z-0 transform -scale-x-100"
+      />
       <div
         className="absolute inset-0 bg-cover bg-center opacity-30"
         style={{
@@ -151,7 +120,7 @@ export function PaginaLogin() {
         }}
       />
 
-      <div className={`relative z-10 min-h-screen flex items-center justify-center p-4 page-content`}>
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 animate-fade-scale">
             <div className="text-center pt-8 pb-6 animate-staggered-1">
@@ -310,13 +279,9 @@ export function PaginaLogin() {
                   ¿No puedes iniciar sesión?
                 </Link>
                 <span className="mx-2 text-gray-400">•</span>
-                <a
-                  href="/register"
-                  onClick={handleNavigateToRegister}
-                  className="text-blue-600 hover:underline transition-colors duration-200"
-                >
+                <NavLinkViewTransition to="/register" onClick={handleNavigateToRegister} className="text-blue-600 hover:underline transition-colors duration-200">
                   Crear una cuenta
-                </a>
+                </NavLinkViewTransition>
               </div>
             </div>
           </div>

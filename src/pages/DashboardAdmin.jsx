@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
+import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
 
 export default function DashboardAdmin() {
   const { slugTienda } = useParams()
@@ -54,10 +55,10 @@ export default function DashboardAdmin() {
           <p className="text-muted-foreground">Resumen general de tu tienda de letreros</p>
         </div>
         <Button asChild>
-          <Link to={`/${slugTienda}/cotizaciones/nueva`}>
+          <NavLinkViewTransition to={`/${slugTienda}/cotizaciones/nueva`}>
             <Plus className="mr-2 h-4 w-4" />
             Nueva Cotización
-          </Link>
+          </NavLinkViewTransition>
         </Button>
       </div>
 
@@ -167,7 +168,7 @@ export default function DashboardAdmin() {
           </div>
           <div className="mt-4">
             <Button variant="outline" asChild className="w-full bg-transparent">
-              <Link to={`/${slugTienda}/ordenes`}>Ver Todas las Órdenes</Link>
+              <NavLinkViewTransition to={`/${slugTienda}/ordenes`}>Ver Todas las Órdenes</NavLinkViewTransition>
             </Button>
           </div>
         </CardContent>
@@ -181,22 +182,22 @@ export default function DashboardAdmin() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Button variant="outline" asChild className="h-20 flex-col bg-transparent">
-              <Link to={`/${slugTienda}/productos/nuevo`}>
+              <NavLinkViewTransition to={`/${slugTienda}/productos/nuevo`}>
                 <Package className="mb-2 h-6 w-6" />
                 Agregar Producto
-              </Link>
+              </NavLinkViewTransition>
             </Button>
             <Button variant="outline" asChild className="h-20 flex-col bg-transparent">
-              <Link to={`/${slugTienda}/clientes/nuevo`}>
+              <NavLinkViewTransition to={`/${slugTienda}/clientes/nuevo`}>
                 <Users className="mb-2 h-6 w-6" />
                 Nuevo Cliente
-              </Link>
+              </NavLinkViewTransition>
             </Button>
             <Button variant="outline" asChild className="h-20 flex-col bg-transparent">
-              <Link to={`/${slugTienda}/facturacion`}>
+              <NavLinkViewTransition to={`/${slugTienda}/facturacion`}>
                 <Receipt className="mb-2 h-6 w-6" />
                 Ver Facturación
-              </Link>
+              </NavLinkViewTransition>
             </Button>
           </div>
         </CardContent>
