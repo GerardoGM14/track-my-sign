@@ -13,20 +13,8 @@ import {
   Building2,
   BarChart3,
   Shield,
+  ChevronRight,
 } from "lucide-react"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarSeparator,
-} from "../components/ui/sidebar"
 import { useAuth } from "../contexts/ContextoAuth"
 import { NavLinkViewTransition } from "./NavLinkViewTransition"
 
@@ -86,12 +74,6 @@ export default function SidebarTienda() {
 
     const elementosGestion = [
       {
-        titulo: "Facturación",
-        url: `/${slugTienda}/facturacion`,
-        icono: Receipt,
-        roles: ["admin"],
-      },
-      {
         titulo: "Usuarios",
         url: `/${slugTienda}/usuarios`,
         icono: UserPlus,
@@ -145,115 +127,125 @@ export default function SidebarTienda() {
   )
 
   return (
-    <Sidebar variant="inset">
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Building2 className="h-4 w-4" />
+    <div className="flex h-[calc(100vh-3rem)] w-64 flex-col bg-[#1A202C] text-white rounded-xl shadow-2xl m-6 my-6 border border-gray-800/50 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-700/50 rounded-t-xl flex-shrink-0">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600">
+          <Building2 className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-sm font-bold leading-tight text-white">TrackMySign</span>
+          <span className="text-xs text-gray-400 leading-tight">{usuario?.nombreTienda || "Mi Tienda"}</span>
+        </div>
+      </div>
+
+      {/* Content - Scroll independiente */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sidebar-scroll">
+        {/* DASHBOARDS */}
+        <div className="mb-6">
+          <div className="px-3 mb-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">DASHBOARDS</span>
           </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">TrackMySign</span>
-            <span className="truncate text-xs text-muted-foreground">{usuario?.nombreTienda || "Mi Tienda"}</span>
+          <div className="space-y-1">
+            {elementosPrincipales.map((item) => {
+              const IconoComponente = item.icono
+              const estaActivo = location.pathname === item.url
+
+              return (
+                <NavLinkViewTransition
+                  key={item.titulo}
+                  to={item.url}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors leading-tight ${
+                    estaActivo
+                      ? "bg-[#2D3748] text-white shadow-sm"
+                      : "text-gray-300 hover:bg-gray-800/50 hover:text-white"
+                  }`}
+                >
+                  <IconoComponente className="h-4 w-4" />
+                  <span className="leading-tight">{item.titulo}</span>
+                </NavLinkViewTransition>
+              )
+            })}
           </div>
         </div>
-      </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {elementosPrincipales.map((item) => {
+        {/* APPLICATIONS */}
+        {elementosGestion.length > 0 && (
+          <div className="mb-6">
+            <div className="px-3 mb-2">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">APLICACIONES</span>
+            </div>
+            <div className="space-y-1">
+              {elementosGestion.map((item) => {
                 const IconoComponente = item.icono
                 const estaActivo = location.pathname === item.url
 
                 return (
-                  <SidebarMenuItem key={item.titulo}>
-                    <SidebarMenuButton asChild isActive={estaActivo}>
-                      <NavLinkViewTransition to={item.url}>
-                        <IconoComponente className="h-4 w-4" />
-                        <span>{item.titulo}</span>
-                      </NavLinkViewTransition>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <NavLinkViewTransition
+                    key={item.titulo}
+                    to={item.url}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors leading-tight ${
+                      estaActivo
+                        ? "bg-[#2D3748] text-white shadow-sm"
+                        : "text-gray-300 hover:bg-gray-800/50 hover:text-white"
+                    }`}
+                  >
+                    <IconoComponente className="h-4 w-4" />
+                    <span className="leading-tight">{item.titulo}</span>
+                    <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
+                  </NavLinkViewTransition>
                 )
               })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {elementosGestion.length > 0 && (
-          <>
-            <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupLabel>Gestión</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {elementosGestion.map((item) => {
-                    const IconoComponente = item.icono
-                    const estaActivo = location.pathname === item.url
-
-                    return (
-                      <SidebarMenuItem key={item.titulo}>
-                        <SidebarMenuButton asChild isActive={estaActivo}>
-                          <NavLinkViewTransition to={item.url}>
-                            <IconoComponente className="h-4 w-4" />
-                            <span>{item.titulo}</span>
-                          </NavLinkViewTransition>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-
-        {elementosSuperAdmin.length > 0 && (
-          <>
-            <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupLabel>Super Admin</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {elementosSuperAdmin.map((item) => {
-                    const IconoComponente = item.icono
-                    const estaActivo = location.pathname === item.url
-
-                    return (
-                      <SidebarMenuItem key={item.titulo}>
-                        <SidebarMenuButton asChild isActive={estaActivo}>
-                          <NavLinkViewTransition to={item.url}>
-                            <IconoComponente className="h-4 w-4" />
-                            <span>{item.titulo}</span>
-                            </NavLinkViewTransition>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
-      </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-2 py-2 text-sm">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
-                <span className="text-xs font-medium">{usuario?.nombre?.charAt(0).toUpperCase() || "U"}</span>
-              </div>
-              <div className="grid flex-1 text-left text-xs leading-tight">
-                <span className="truncate font-medium">{usuario?.nombre || "Usuario"}</span>
-                <span className="truncate text-muted-foreground capitalize">{usuario?.rol || "customer"}</span>
-              </div>
             </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+          </div>
+        )}
+
+        {/* SUPER ADMIN */}
+        {elementosSuperAdmin.length > 0 && (
+          <div className="mb-6">
+            <div className="px-3 mb-2">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">ADMINISTRACIÓN</span>
+            </div>
+            <div className="space-y-1">
+              {elementosSuperAdmin.map((item) => {
+                const IconoComponente = item.icono
+                const estaActivo = location.pathname === item.url
+
+                return (
+                  <NavLinkViewTransition
+                    key={item.titulo}
+                    to={item.url}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors leading-tight ${
+                      estaActivo
+                        ? "bg-[#2D3748] text-white shadow-sm"
+                        : "text-gray-300 hover:bg-gray-800/50 hover:text-white"
+                    }`}
+                  >
+                    <IconoComponente className="h-4 w-4" />
+                    <span className="leading-tight">{item.titulo}</span>
+                    <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
+                  </NavLinkViewTransition>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-gray-700/50 px-4 py-4 rounded-b-xl flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-700">
+            <span className="text-xs font-semibold text-white">
+              {usuario?.nombre?.charAt(0).toUpperCase() || "U"}
+            </span>
+          </div>
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-sm font-medium text-white truncate leading-tight">{usuario?.nombre || "Usuario"}</span>
+            <span className="text-xs text-gray-400 capitalize truncate leading-tight">{usuario?.rol || "customer"}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -9,7 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { Badge } from "../components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import { CalculadoraPrecios } from "../components/CalculadoraPrecios"
+import { Plus, DollarSign, Trash2, Percent, Tag } from "lucide-react"
+import { toast } from "../hooks/user-toast"
 
 export function PaginaPrecios() {
   const { tiendaActual } = useContextoTienda()
@@ -114,21 +118,41 @@ export function PaginaPrecios() {
       await addDoc(reglasRef, datosRegla)
       await cargarDatos()
       resetearFormulario()
+      toast({
+        title: "Regla de precio creada",
+        description: "La regla de precio se ha creado exitosamente",
+      })
     } catch (error) {
       console.error("Error guardando regla:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la regla. Intenta nuevamente.",
+        variant: "destructive",
+      })
     } finally {
       setCargando(false)
     }
   }
 
   const eliminarRegla = async (id) => {
-    if (window.confirm("¿Estás seguro de eliminar esta regla?")) {
-      try {
-        await deleteDoc(doc(db, "tiendas", tiendaActual.id, "reglasPrecio", id))
-        await cargarDatos()
-      } catch (error) {
-        console.error("Error eliminando regla:", error)
-      }
+    if (!window.confirm("¿Estás seguro de eliminar esta regla? Esta acción no se puede deshacer.")) {
+      return
+    }
+
+    try {
+      await deleteDoc(doc(db, "tiendas", tiendaActual.id, "reglasPrecio", id))
+      await cargarDatos()
+      toast({
+        title: "Regla eliminada",
+        description: "La regla de precio se ha eliminado correctamente",
+      })
+    } catch (error) {
+      console.error("Error eliminando regla:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la regla. Intenta nuevamente.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -191,29 +215,45 @@ export function PaginaPrecios() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Gestión de Precios</h1>
-        <Button onClick={() => setMostrarFormulario(true)}>Nueva Regla de Precio</Button>
+    <div className="space-y-6 min-h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Gestión de Precios</h1>
+          <p className="text-sm text-gray-600 mt-1 leading-tight">Configura reglas de precios y descuentos</p>
+        </div>
+        <Button 
+          onClick={() => setMostrarFormulario(true)} 
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nueva Regla de Precio
+        </Button>
       </div>
 
-      <div className="mb-8">
-        <CalculadoraPrecios
-          productos={productos}
-          reglasPrecio={reglasPrecio}
-          materiales={materiales}
-          acabados={acabados}
-        />
-      </div>
+      {/* Calculadora de Precios */}
+      <Card className="border border-gray-200 rounded-xl shadow-md bg-white mb-6">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-gray-900 leading-tight">Calculadora de Precios</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CalculadoraPrecios
+            productos={productos}
+            reglasPrecio={reglasPrecio}
+            materiales={materiales}
+            acabados={acabados}
+          />
+        </CardContent>
+      </Card>
 
-      {mostrarFormulario && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Nueva Regla de Precio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={manejarSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Formulario en Dialog */}
+      <Dialog open={mostrarFormulario} onOpenChange={setMostrarFormulario}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900">Nueva Regla de Precio</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={manejarSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="nombre">Nombre de la Regla</Label>
                   <Input
@@ -341,66 +381,107 @@ export function PaginaPrecios() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button type="submit" disabled={cargando}>
-                  {cargando ? "Guardando..." : "Guardar Regla"}
-                </Button>
-                <Button type="button" variant="outline" onClick={resetearFormulario}>
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+            <div className="flex gap-2 pt-4">
+              <Button 
+                type="submit" 
+                disabled={cargando}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {cargando ? "Guardando..." : "Guardar Regla"}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={resetearFormulario}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        {/* Reglas de Precio */}
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader>
-            <CardTitle>Reglas de Precio Activas</CardTitle>
+            <CardTitle className="text-base font-semibold text-gray-900 leading-tight">Reglas de Precio Activas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {reglasPrecio.map((regla) => (
-                <div key={regla.id} className="border rounded p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-semibold">{regla.nombre}</h4>
-                    <Button size="sm" variant="destructive" onClick={() => eliminarRegla(regla.id)}>
-                      Eliminar
+                <div 
+                  key={regla.id} 
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <Tag className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 text-sm leading-tight">{regla.nombre}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                            {tiposRegla.find((t) => t.value === regla.tipoRegla)?.label}
+                          </Badge>
+                          {regla.activa ? (
+                            <Badge className="text-xs bg-green-100 text-green-700">Activa</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-500">Inactiva</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => eliminarRegla(regla.id)}
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {tiposRegla.find((t) => t.value === regla.tipoRegla)?.label} -{" "}
-                    {condiciones.find((c) => c.value === regla.condicion)?.label} {regla.valor1}
-                    {regla.valor2 && ` y ${regla.valor2}`}
-                  </p>
-                  <p className="text-sm">
-                    Descuento: {regla.descuento}
-                    {regla.tipoDescuento === "porcentaje" ? "%" : "€"}
-                  </p>
+                  <div className="space-y-1 text-sm">
+                    <p className="text-gray-600">
+                      <span className="font-medium">Condición:</span> {condiciones.find((c) => c.value === regla.condicion)?.label} {regla.valor1}
+                      {regla.valor2 && ` y ${regla.valor2}`}
+                    </p>
+                    <p className="text-gray-900 font-semibold">
+                      <span className="text-gray-600 font-normal">Descuento:</span> {regla.descuento}
+                      {regla.tipoDescuento === "porcentaje" ? "%" : "€"}
+                    </p>
+                  </div>
                 </div>
               ))}
               {reglasPrecio.length === 0 && (
-                <p className="text-gray-500 text-center py-4">No hay reglas de precio configuradas</p>
+                <div className="text-center py-8">
+                  <Tag className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">No hay reglas de precio configuradas</p>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Estadísticas */}
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader>
-            <CardTitle>Estadísticas de Precios</CardTitle>
+            <CardTitle className="text-base font-semibold text-gray-900 leading-tight">Estadísticas de Precios</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{productos.length}</div>
-                  <div className="text-sm text-blue-800">Productos</div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <DollarSign className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-blue-600 leading-tight">{productos.length}</div>
+                  <div className="text-sm text-blue-800 leading-tight">Productos</div>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{reglasPrecio.length}</div>
-                  <div className="text-sm text-green-800">Reglas Activas</div>
+                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-100">
+                  <Percent className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-green-600 leading-tight">{reglasPrecio.length}</div>
+                  <div className="text-sm text-green-800 leading-tight">Reglas Activas</div>
                 </div>
               </div>
 

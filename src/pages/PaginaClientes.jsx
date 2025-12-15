@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, addDoc, getDocs } from "firebase/firestore"
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore"
 import { db } from "../lib/firebase"
 import { useContextoTienda } from "../contexts/ContextoTienda"
 import { Button } from "../components/ui/button"
@@ -12,7 +12,9 @@ import { Textarea } from "../components/ui/textarea"
 import { Badge } from "../components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { Plus, User, Mail, Phone, Building, MapPin, Eye, FileText, Clock } from "lucide-react"
+import { Plus, User, Users, Mail, Phone, Building, MapPin, Eye, FileText, Clock, Edit, Trash2 } from "lucide-react"
+import { toast } from "../hooks/user-toast"
+
 
 export function PaginaClientes() {
   const { tiendaActual } = useContextoTienda()
@@ -22,6 +24,7 @@ export function PaginaClientes() {
   const [cargando, setCargando] = useState(false)
   const [mostrarDialogoCliente, setMostrarDialogoCliente] = useState(false)
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
+  const [clienteEditando, setClienteEditando] = useState(null)
 
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: "",
@@ -85,13 +88,27 @@ export function PaginaClientes() {
 
       const datosCliente = {
         ...nuevoCliente,
-        fechaCreacion: new Date(),
+        fechaCreacion: clienteEditando ? clienteEditando.fechaCreacion : new Date(),
         fechaActualizacion: new Date(),
       }
 
-      await addDoc(clientesRef, datosCliente)
+      if (clienteEditando) {
+        await updateDoc(doc(db, "tiendas", tiendaActual.id, "clientes", clienteEditando.id), datosCliente)
+        toast({
+          title: "Cliente actualizado",
+          description: "Los datos del cliente se han actualizado correctamente",
+        })
+      } else {
+        await addDoc(clientesRef, datosCliente)
+        toast({
+          title: "Cliente creado",
+          description: "El cliente se ha creado exitosamente",
+        })
+      }
+
       await cargarDatos()
       setMostrarDialogoCliente(false)
+      setClienteEditando(null)
       setNuevoCliente({
         nombre: "",
         email: "",
@@ -105,6 +122,52 @@ export function PaginaClientes() {
       })
     } catch (error) {
       console.error("Error guardando cliente:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el cliente. Intenta nuevamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  const editarCliente = (cliente) => {
+    setClienteEditando(cliente)
+    setNuevoCliente({
+      nombre: cliente.nombre || "",
+      email: cliente.email || "",
+      telefono: cliente.telefono || "",
+      empresa: cliente.empresa || "",
+      direccion: cliente.direccion || "",
+      ciudad: cliente.ciudad || "",
+      codigoPostal: cliente.codigoPostal || "",
+      pais: cliente.pais || "",
+      notas: cliente.notas || "",
+    })
+    setMostrarDialogoCliente(true)
+  }
+
+  const eliminarCliente = async (id) => {
+    if (!window.confirm("¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer.")) {
+      return
+    }
+
+    try {
+      setCargando(true)
+      await deleteDoc(doc(db, "tiendas", tiendaActual.id, "clientes", id))
+      await cargarDatos()
+      toast({
+        title: "Cliente eliminado",
+        description: "El cliente se ha eliminado correctamente",
+      })
+    } catch (error) {
+      console.error("Error eliminando cliente:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cliente. Intenta nuevamente.",
+        variant: "destructive",
+      })
     } finally {
       setCargando(false)
     }
@@ -147,20 +210,26 @@ export function PaginaClientes() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Gestión de Clientes</h1>
+    <div className="space-y-6 min-h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Gestión de Clientes</h1>
+          <p className="text-sm text-gray-600 mt-1 leading-tight">Administra tu base de datos de clientes</p>
+        </div>
+        <Button 
+          onClick={() => setMostrarDialogoCliente(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nuevo Cliente
+        </Button>
+        
         <Dialog open={mostrarDialogoCliente} onOpenChange={setMostrarDialogoCliente}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Cliente
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
-            </DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{clienteEditando ? "Editar Cliente" : "Agregar Nuevo Cliente"}</DialogTitle>
+          </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="nombre">Nombre Completo</Label>
@@ -231,11 +300,33 @@ export function PaginaClientes() {
                 />
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Button onClick={guardarCliente} disabled={cargando || !nuevoCliente.nombre || !nuevoCliente.email}>
+            <div className="flex gap-2 mt-4 pt-4">
+              <Button 
+                onClick={guardarCliente} 
+                disabled={cargando || !nuevoCliente.nombre || !nuevoCliente.email}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 {cargando ? "Guardando..." : "Guardar Cliente"}
               </Button>
-              <Button variant="outline" onClick={() => setMostrarDialogoCliente(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setMostrarDialogoCliente(false)
+                  setClienteEditando(null)
+                  setNuevoCliente({
+                    nombre: "",
+                    email: "",
+                    telefono: "",
+                    empresa: "",
+                    direccion: "",
+                    ciudad: "",
+                    codigoPostal: "",
+                    pais: "",
+                    notas: "",
+                  })
+                }}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
                 Cancelar
               </Button>
             </div>
@@ -244,65 +335,95 @@ export function PaginaClientes() {
       </div>
 
       {/* Lista de clientes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {clientes.map((cliente) => {
           const ordenesCliente = obtenerOrdenesCliente(cliente.email)
           const cotizacionesCliente = obtenerCotizacionesCliente(cliente.email)
           const totalGastado = calcularTotalGastado(cliente.email)
 
           return (
-            <Card key={cliente.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
+            <Card 
+              key={cliente.id} 
+              className="border border-gray-200 rounded-xl shadow-md bg-white hover:shadow-lg transition-shadow"
+            >
+              <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-primary" />
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-blue-600" />
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{cliente.nombre}</CardTitle>
-                      {cliente.empresa && <p className="text-sm text-gray-600">{cliente.empresa}</p>}
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base font-semibold text-gray-900 leading-tight truncate">
+                        {cliente.nombre}
+                      </CardTitle>
+                      {cliente.empresa && (
+                        <p className="text-sm text-gray-600 mt-1 leading-tight truncate">{cliente.empresa}</p>
+                      )}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setClienteSeleccionado(cliente)}>
-                    <Eye className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => editarCliente(cliente)}
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setClienteSeleccionado(cliente)}
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      <Eye className="w-3 h-3" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => eliminarCliente(cliente.id)}
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="pt-0">
+                <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail className="w-4 h-4" />
-                    <span>{cliente.email}</span>
+                    <Mail className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{cliente.email}</span>
                   </div>
                   {cliente.telefono && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="w-4 h-4" />
+                      <Phone className="w-4 h-4 flex-shrink-0" />
                       <span>{cliente.telefono}</span>
                     </div>
                   )}
                   {cliente.direccion && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="w-4 h-4" />
-                      <span>
+                      <MapPin className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">
                         {cliente.direccion}
                         {cliente.ciudad && `, ${cliente.ciudad}`}
                       </span>
                     </div>
                   )}
+                </div>
 
-                  <div className="grid grid-cols-3 gap-2 pt-3 border-t">
-                    <div className="text-center">
-                      <p className="text-lg font-semibold text-blue-600">{cotizacionesCliente.length}</p>
-                      <p className="text-xs text-gray-500">Cotizaciones</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-semibold text-green-600">{ordenesCliente.length}</p>
-                      <p className="text-xs text-gray-500">Órdenes</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-semibold">€{totalGastado.toFixed(2)}</p>
-                      <p className="text-xs text-gray-500">Total</p>
-                    </div>
+                <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
+                  <div className="text-center">
+                    <p className="text-base font-semibold text-blue-600 leading-tight">{cotizacionesCliente.length}</p>
+                    <p className="text-xs text-gray-500 leading-tight">Cotizaciones</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-base font-semibold text-green-600 leading-tight">{ordenesCliente.length}</p>
+                    <p className="text-xs text-gray-500 leading-tight">Órdenes</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-base font-semibold text-gray-900 leading-tight">€{totalGastado.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500 leading-tight">Total</p>
                   </div>
                 </div>
               </CardContent>
@@ -461,11 +582,25 @@ export function PaginaClientes() {
       )}
 
       {clientes.length === 0 && !cargando && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No hay clientes registrados</p>
-          <Button className="mt-4" onClick={() => setMostrarDialogoCliente(true)}>
-            Agregar Primer Cliente
-          </Button>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Users className="h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-500 text-base mb-2">No hay clientes registrados</p>
+            <p className="text-gray-400 text-sm mb-6">Comienza agregando tu primer cliente</p>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setMostrarDialogoCliente(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Primer Cliente
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {cargando && clientes.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Cargando clientes...</p>
         </div>
       )}
     </div>

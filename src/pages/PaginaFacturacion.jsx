@@ -34,7 +34,9 @@ import {
   Settings,
   CheckCircle,
   AlertTriangle,
+  Receipt,
 } from "lucide-react"
+import { toast } from "../hooks/user-toast"
 
 export function PaginaFacturacion() {
   const { usuarioActual } = useContextoAuth()
@@ -216,8 +218,17 @@ export function PaginaFacturacion() {
       })
       cargarFacturas()
       calcularEstadisticas()
+      toast({
+        title: "Factura creada",
+        description: "La factura se ha creado exitosamente",
+      })
     } catch (error) {
       console.error("Error creando factura:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo crear la factura. Intenta nuevamente.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -298,19 +309,22 @@ export function PaginaFacturacion() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 min-h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Facturación</h1>
-          <p className="text-gray-600">Gestiona facturas, pagos y reportes financieros</p>
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Facturación</h1>
+          <p className="text-sm text-gray-600 mt-1 leading-tight">Gestiona facturas, pagos y reportes financieros</p>
         </div>
+        <Button 
+          onClick={() => setMostrarNuevaFactura(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nueva Factura
+        </Button>
+        
         <Dialog open={mostrarNuevaFactura} onOpenChange={setMostrarNuevaFactura}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Factura
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Crear Nueva Factura</DialogTitle>
@@ -365,11 +379,19 @@ export function PaginaFacturacion() {
                   }
                 />
               </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setMostrarNuevaFactura(false)}>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setMostrarNuevaFactura(false)}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
                   Cancelar
                 </Button>
-                <Button onClick={crearFactura} disabled={!nuevaFactura.ordenId}>
+                <Button 
+                  onClick={crearFactura} 
+                  disabled={!nuevaFactura.ordenId}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   Crear Factura
                 </Button>
               </div>
@@ -379,41 +401,41 @@ export function PaginaFacturacion() {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Facturado</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600 leading-tight">Total Facturado</CardTitle>
+            <DollarSign className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€{estadisticas.totalFacturado.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-gray-900 leading-tight">€{estadisticas.totalFacturado.toLocaleString()}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Facturas Pendientes</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600 leading-tight">Facturas Pendientes</CardTitle>
+            <FileText className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{estadisticas.facturasPendientes}</div>
+            <div className="text-2xl font-bold text-orange-600 leading-tight">{estadisticas.facturasPendientes}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Facturas Pagadas</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600 leading-tight">Facturas Pagadas</CardTitle>
+            <CreditCard className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{estadisticas.facturasPagadas}</div>
+            <div className="text-2xl font-bold text-green-600 leading-tight">{estadisticas.facturasPagadas}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos del Mes</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600 leading-tight">Ingresos del Mes</CardTitle>
+            <TrendingUp className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">€{estadisticas.ingresosMes.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-blue-600 leading-tight">€{estadisticas.ingresosMes.toLocaleString()}</div>
           </CardContent>
         </Card>
       </div>
@@ -428,52 +450,85 @@ export function PaginaFacturacion() {
         <TabsContent value="facturas" className="space-y-4">
           <div className="grid gap-4">
             {facturas.map((factura) => (
-              <Card key={factura.id}>
-                <CardHeader>
+              <Card 
+                key={factura.id} 
+                className="border border-gray-200 rounded-xl shadow-md bg-white hover:shadow-lg transition-shadow"
+              >
+                <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{factura.numeroFactura}</CardTitle>
-                      <CardDescription>
-                        Cliente: {factura.cliente?.nombre} • Creada:{" "}
-                        {new Date(factura.fechaCreacion?.seconds * 1000).toLocaleDateString()}
-                      </CardDescription>
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <Receipt className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base font-semibold text-gray-900 leading-tight">
+                          {factura.numeroFactura || "Sin número"}
+                        </CardTitle>
+                        <CardDescription className="text-sm text-gray-600 mt-1 leading-tight">
+                          Cliente: {factura.cliente?.nombre || "Sin cliente"} • Creada:{" "}
+                          {factura.fechaCreacion?.seconds 
+                            ? new Date(factura.fechaCreacion.seconds * 1000).toLocaleDateString()
+                            : "Fecha no disponible"}
+                        </CardDescription>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge className={obtenerColorEstado(factura.estado)}>
-                        {factura.estado.charAt(0).toUpperCase() + factura.estado.slice(1)}
+                    <div className="flex items-center space-x-3">
+                      <Badge className={`${obtenerColorEstado(factura.estado)} capitalize`}>
+                        {factura.estado}
                       </Badge>
                       <div className="text-right">
-                        <div className="text-2xl font-bold">€{factura.total?.toLocaleString()}</div>
-                        <div className="text-sm text-gray-500">
-                          Vence: {new Date(factura.fechaVencimiento?.seconds * 1000).toLocaleDateString()}
+                        <div className="text-xl font-bold text-gray-900 leading-tight">€{factura.total?.toLocaleString() || "0.00"}</div>
+                        <div className="text-xs text-gray-500 leading-tight">
+                          Vence: {factura.fechaVencimiento?.seconds 
+                            ? new Date(factura.fechaVencimiento.seconds * 1000).toLocaleDateString()
+                            : "N/A"}
                         </div>
                       </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-gray-600">
-                      Subtotal: €{factura.subtotal?.toLocaleString()} • Impuestos: €
-                      {factura.impuestos?.toLocaleString()}
+                      Subtotal: €{factura.subtotal?.toLocaleString() || "0.00"} • Impuestos: €
+                      {factura.impuestos?.toLocaleString() || "0.00"}
                     </div>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => generarPDF(factura)}>
-                        <Download className="w-4 h-4 mr-1" />
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => generarPDF(factura)}
+                        className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      >
+                        <Download className="w-3 h-3 mr-1" />
                         PDF
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => enviarFactura(factura.id)}>
-                        <Send className="w-4 h-4 mr-1" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => enviarFactura(factura.id)}
+                        className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      >
+                        <Send className="w-3 h-3 mr-1" />
                         Enviar
                       </Button>
                       {factura.estado === "pendiente" && (
-                        <Button size="sm" onClick={() => iniciarPagoStripe(factura)}>
-                          <CreditCard className="w-4 h-4 mr-1" />
+                        <Button 
+                          size="sm" 
+                          onClick={() => iniciarPagoStripe(factura)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <CreditCard className="w-3 h-3 mr-1" />
                           Procesar Pago
                         </Button>
                       )}
-                      <Button variant="outline" size="sm" onClick={() => setFacturaSeleccionada(factura)}>
-                        <Eye className="w-4 h-4 mr-1" />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setFacturaSeleccionada(factura)}
+                        className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
                         Ver
                       </Button>
                     </div>

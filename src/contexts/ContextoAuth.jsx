@@ -86,6 +86,67 @@ export function ProveedorAuth({ children }) {
 
   const cerrarSesion = async () => {
     await signOut(auth)
+    setUsuarioActual(null) // Asegurar que el usuario actual se limpia
+    setUsuarioFirebase(null) // Asegurar que el usuario de Firebase se limpia
+  }
+
+  // Función para iniciar sesión con usuario admin mockeado (solo desarrollo)
+  const iniciarSesionMock = async () => {
+    const usuarioMockeado = {
+      id: "mock-admin-uid",
+      email: "admin@trackmysign.com",
+      nombre: "Administrador Mock",
+      rol: "admin",
+      tiendaId: "tienda-demo", // ID de tienda mockeado
+      planId: "professional",
+      fechaCreacion: new Date(),
+      fechaActualizacion: new Date(),
+      configuracionCompleta: true,
+      empresa: "TrackMySign Demo",
+      telefono: "+1 234 567 8900",
+      direccion: "Calle Demo 123",
+    }
+
+    // Simular usuario de Firebase mockeado
+    const usuarioFirebaseMock = {
+      uid: "mock-admin-uid",
+      email: "admin@trackmysign.com",
+      displayName: "Administrador Mock",
+      // Otros campos necesarios para simular un usuario de Firebase
+    }
+
+    setUsuarioActual(usuarioMockeado)
+    setUsuarioFirebase(usuarioFirebaseMock)
+    // No hay necesidad de llamar a Firebase auth para un mock
+    return Promise.resolve({ user: usuarioFirebaseMock })
+  }
+
+  // Función para iniciar sesión con usuario customer mockeado (solo desarrollo)
+  const iniciarSesionMockCustomer = async () => {
+    const usuarioMockeado = {
+      id: "mock-customer-uid",
+      email: "customer@trackmysign.com",
+      nombre: "Usuario Mock",
+      rol: "customer",
+      tiendaId: null,
+      planId: "basic",
+      fechaCreacion: new Date(),
+      fechaActualizacion: new Date(),
+      configuracionCompleta: true,
+    }
+
+    // Simular usuario de Firebase mockeado
+    const usuarioFirebaseMock = {
+      uid: "mock-customer-uid",
+      email: "customer@trackmysign.com",
+      displayName: "Usuario Mock",
+      // Otros campos necesarios para simular un usuario de Firebase
+    }
+
+    setUsuarioActual(usuarioMockeado)
+    setUsuarioFirebase(usuarioFirebaseMock)
+    // No hay necesidad de llamar a Firebase auth para un mock
+    return Promise.resolve({ user: usuarioFirebaseMock })
   }
 
   const tienePermiso = (permisoRequerido) => {
@@ -132,6 +193,8 @@ export function ProveedorAuth({ children }) {
     cerrarSesion,
     tienePermiso, // Agregando función de permisos
     usuario: usuarioActual,
+    iniciarSesionMock, // Añadir la función mock al contexto
+    iniciarSesionMockCustomer, // Añadir la función mock customer al contexto
   }
 
   return <ContextoAuth.Provider value={valor}>{!cargando && children}</ContextoAuth.Provider>

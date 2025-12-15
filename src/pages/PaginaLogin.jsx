@@ -21,7 +21,7 @@ export function PaginaLogin() {
   const [pasoActual, setPasoActual] = useState(1) // 1 = email, 2 = password
   const [animacionKey, setAnimacionKey] = useState(0) // Para forzar re-animación
 
-  const { iniciarSesion, iniciarSesionConGoogle, usuarioActual } = useContextoAuth()
+  const { iniciarSesion, iniciarSesionConGoogle, iniciarSesionMock, iniciarSesionMockCustomer, usuarioActual } = useContextoAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -78,15 +78,16 @@ export function PaginaLogin() {
     }
   }
 
-  const redirigirSegunRol = () => {
-    if (usuarioActual?.rol === "superadmin") {
+  const redirigirSegunRol = (usuario = null) => {
+    const usuarioARedirigir = usuario || usuarioActual
+    if (usuarioARedirigir?.rol === "superadmin") {
       navigate("/superadmin/dashboard")
-    } else if (usuarioActual?.rol === "admin" && usuarioActual?.tiendaId) {
-      navigate(`/${usuarioActual.tiendaId}/dashboard`)
-    } else if (usuarioActual?.rol === "admin" && !usuarioActual?.tiendaId) {
+    } else if (usuarioARedirigir?.rol === "admin" && usuarioARedirigir?.tiendaId) {
+      navigate(`/${usuarioARedirigir.tiendaId}`)
+    } else if (usuarioARedirigir?.rol === "admin" && !usuarioARedirigir?.tiendaId) {
       navigate("/onboarding")
-    } else if (usuarioActual?.rol === "empleado" && usuarioActual?.tiendaId) {
-      navigate(`/${usuarioActual.tiendaId}/dashboard`)
+    } else if (usuarioARedirigir?.rol === "empleado" && usuarioARedirigir?.tiendaId) {
+      navigate(`/${usuarioARedirigir.tiendaId}`)
     } else {
       navigate("/cliente/dashboard")
     }
@@ -97,6 +98,46 @@ export function PaginaLogin() {
     navigate("/register", {
       state: { planSeleccionado, fromLogin: true },
     })
+  }
+
+  const manejarLoginMock = async () => {
+    setCargando(true)
+    setError("")
+    try {
+      const resultado = await iniciarSesionMock()
+      // Usar el usuario directamente para redirigir
+      const usuarioMockeado = {
+        id: "mock-admin-uid",
+        email: "admin@trackmysign.com",
+        nombre: "Administrador Mock",
+        rol: "admin",
+        tiendaId: "tienda-demo",
+      }
+      redirigirSegunRol(usuarioMockeado)
+    } catch (error) {
+      setError(error.message || "Error al iniciar sesión mock")
+      setCargando(false)
+    }
+  }
+
+  const manejarLoginMockCustomer = async () => {
+    setCargando(true)
+    setError("")
+    try {
+      await iniciarSesionMockCustomer()
+      // Usar el usuario directamente para redirigir
+      const usuarioMockeado = {
+        id: "mock-customer-uid",
+        email: "customer@trackmysign.com",
+        nombre: "Usuario Mock",
+        rol: "customer",
+        tiendaId: null,
+      }
+      redirigirSegunRol(usuarioMockeado)
+    } catch (error) {
+      setError(error.message || "Error al iniciar sesión mock customer")
+      setCargando(false)
+    }
   }
 
   return (
@@ -230,6 +271,28 @@ export function PaginaLogin() {
                   )}
                 </Button>
               </form>
+
+              {/* Botones de login mockeados solo en desarrollo */}
+              {import.meta.env.DEV && (
+                <div className="mt-4 space-y-2">
+                  <Button
+                    type="button"
+                    onClick={manejarLoginMock}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center"
+                    disabled={cargando}
+                  >
+                    🔧 Login Admin Mock (Dev)
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={manejarLoginMockCustomer}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center"
+                    disabled={cargando}
+                  >
+                    👤 Login Usuario Mock (Dev)
+                  </Button>
+                </div>
+              )}
 
               {pasoActual === 1 && (
                 <div className="mt-6 animate-staggered-4">

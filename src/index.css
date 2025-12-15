@@ -1,1 +1,62 @@
 @import "tailwindcss";
+
+/* Configuración de fuentes personalizadas */
+@theme {
+  --font-inter: 'Inter', sans-serif;
+  --font-poppins: 'Poppins', sans-serif;
+  
+  --font-family-sans: var(--font-inter);
+}
+
+/* Aplicar fuente Inter por defecto en todo el proyecto */
+html,
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Asegurar que todos los elementos hereden Inter */
+* {
+  font-family: inherit;
+}
+
+/* Clase para usar Poppins en Tailwind */
+.font-poppins {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Estilos para scrollbars personalizadas */
+/* Sidebar scrollbar */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #4B5563;
+  border-radius: 3px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6B7280;
+}
+
+/* Dashboard scrollbar */
+.dashboard-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.dashboard-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.dashboard-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

@@ -13,7 +13,8 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog"
-import { Clock, User, Calendar, FileText, Plus, ArrowRight, CheckCircle, AlertCircle, PlayCircle } from "lucide-react"
+import { Clock, User, Calendar, FileText, Plus, ArrowRight, CheckCircle, AlertCircle, PlayCircle, ClipboardList } from "lucide-react"
+import { toast } from "../hooks/user-toast"
 
 export function PaginaOrdenes() {
   const { tiendaActual } = useContextoTienda()
@@ -168,8 +169,17 @@ export function PaginaOrdenes() {
         empleadoAsignado: "",
         notas: "",
       })
+      toast({
+        title: "Orden creada",
+        description: "La orden se ha creado exitosamente",
+      })
     } catch (error) {
       console.error("Error creando orden:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo crear la orden. Intenta nuevamente.",
+        variant: "destructive",
+      })
     } finally {
       setCargando(false)
     }
@@ -182,7 +192,7 @@ export function PaginaOrdenes() {
         estado: nuevoEstado,
         fechaActualizacion: new Date(),
         historialEstados: [
-          ...orden.historialEstados,
+          ...(orden.historialEstados || []),
           {
             estado: nuevoEstado,
             fecha: new Date(),
@@ -201,20 +211,39 @@ export function PaginaOrdenes() {
 
       await updateDoc(doc(db, "tiendas", tiendaActual.id, "ordenes", ordenId), actualizacion)
       await cargarDatos()
+      toast({
+        title: "Estado actualizado",
+        description: `La orden se ha actualizado a ${nuevoEstado}`,
+      })
     } catch (error) {
       console.error("Error actualizando estado:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado. Intenta nuevamente.",
+        variant: "destructive",
+      })
     }
   }
 
   const asignarEmpleado = async (ordenId, empleadoId) => {
     try {
+      const empleado = empleados.find((e) => e.id === empleadoId)
       await updateDoc(doc(db, "tiendas", tiendaActual.id, "ordenes", ordenId), {
         empleadoAsignado: empleadoId,
         fechaActualizacion: new Date(),
       })
       await cargarDatos()
+      toast({
+        title: "Empleado asignado",
+        description: `La orden se ha asignado a ${empleado?.nombre || "el empleado"}`,
+      })
     } catch (error) {
       console.error("Error asignando empleado:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo asignar el empleado. Intenta nuevamente.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -245,17 +274,23 @@ export function PaginaOrdenes() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Gestión de Órdenes</h1>
-        <Dialog open={mostrarDialogoOrden} onOpenChange={setMostrarDialogoOrden}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Orden
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+      <div className="space-y-6 min-h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 leading-tight">Gestión de Órdenes</h1>
+            <p className="text-sm text-gray-600 mt-1 leading-tight">Sigue el estado de tus órdenes de trabajo</p>
+          </div>
+          <Button 
+            onClick={() => setMostrarDialogoOrden(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Orden
+          </Button>
+          
+          <Dialog open={mostrarDialogoOrden} onOpenChange={setMostrarDialogoOrden}>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Crear Nueva Orden</DialogTitle>
             </DialogHeader>
@@ -337,14 +372,19 @@ export function PaginaOrdenes() {
                 />
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-4">
                 <Button
                   onClick={crearOrdenDesdeCotizacion}
                   disabled={cargando || !nuevaOrden.cotizacionId || !nuevaOrden.fechaEntrega}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   {cargando ? "Creando..." : "Crear Orden"}
                 </Button>
-                <Button variant="outline" onClick={() => setMostrarDialogoOrden(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setMostrarDialogoOrden(false)}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
                   Cancelar
                 </Button>
               </div>
@@ -360,13 +400,13 @@ export function PaginaOrdenes() {
           const IconoEstado = estado.icono
 
           return (
-            <div key={estado.id} className="bg-gray-50 rounded-lg p-4">
+            <div key={estado.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <IconoEstado className="w-5 h-5" />
-                  <h3 className="font-semibold">{estado.nombre}</h3>
+                  <IconoEstado className="w-5 h-5 text-gray-600" />
+                  <h3 className="font-semibold text-gray-900 text-sm leading-tight">{estado.nombre}</h3>
                 </div>
-                <Badge variant="secondary">{ordenesEstado.length}</Badge>
+                <Badge variant="secondary" className="bg-gray-200 text-gray-700">{ordenesEstado.length}</Badge>
               </div>
 
               <div className="space-y-3">
@@ -375,14 +415,17 @@ export function PaginaOrdenes() {
                   const prioridad = prioridades.find((p) => p.value === orden.prioridad)
 
                   return (
-                    <Card key={orden.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <Card 
+                      key={orden.id} 
+                      className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200 rounded-lg bg-white"
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
-                          <CardTitle className="text-sm">{orden.numero}</CardTitle>
-                          <Badge className={prioridad.color}>{prioridad.label}</Badge>
+                          <CardTitle className="text-sm font-semibold text-gray-900 leading-tight">{orden.numero}</CardTitle>
+                          <Badge className={`${prioridad.color} text-xs`}>{prioridad.label}</Badge>
                         </div>
-                        <p className="text-xs text-gray-600">
-                          {orden.cliente.nombre} - {orden.cliente.empresa}
+                        <p className="text-xs text-gray-600 mt-1 leading-tight">
+                          {orden.cliente?.nombre || "Sin cliente"} {orden.cliente?.empresa && `- ${orden.cliente.empresa}`}
                         </p>
                       </CardHeader>
                       <CardContent className="pt-0">
@@ -429,7 +472,7 @@ export function PaginaOrdenes() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-6 text-xs px-2 bg-transparent"
+                                className="h-7 text-xs px-2 border-blue-300 text-blue-700 hover:bg-blue-50 flex-1"
                                 onClick={() => cambiarEstadoOrden(orden.id, siguienteEstado.id)}
                               >
                                 <ArrowRight className="w-3 h-3 mr-1" />
@@ -456,47 +499,47 @@ export function PaginaOrdenes() {
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Órdenes</p>
-                <p className="text-2xl font-bold">{ordenes.length}</p>
+                <p className="text-sm text-gray-600 leading-tight">Total Órdenes</p>
+                <p className="text-2xl font-bold text-gray-900 leading-tight">{ordenes.length}</p>
               </div>
               <FileText className="w-8 h-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">En Progreso</p>
-                <p className="text-2xl font-bold text-blue-600">{obtenerOrdenesPorEstado("en_progreso").length}</p>
+                <p className="text-sm text-gray-600 leading-tight">En Progreso</p>
+                <p className="text-2xl font-bold text-blue-600 leading-tight">{obtenerOrdenesPorEstado("en_progreso").length}</p>
               </div>
               <PlayCircle className="w-8 h-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Completadas</p>
-                <p className="text-2xl font-bold text-green-600">{obtenerOrdenesPorEstado("completado").length}</p>
+                <p className="text-sm text-gray-600 leading-tight">Completadas</p>
+                <p className="text-2xl font-bold text-green-600 leading-tight">{obtenerOrdenesPorEstado("completado").length}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Valor Total</p>
+                <p className="text-sm text-gray-600 leading-tight">Valor Total</p>
                 <p className="text-2xl font-bold">
                   €{ordenes.reduce((sum, orden) => sum + Number.parseFloat(orden.totales?.total || 0), 0).toFixed(2)}
                 </p>
@@ -508,12 +551,20 @@ export function PaginaOrdenes() {
       </div>
 
       {ordenes.length === 0 && !cargando && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No hay órdenes registradas</p>
-          <Button className="mt-4" onClick={() => setMostrarDialogoOrden(true)}>
-            Crear Primera Orden
-          </Button>
-        </div>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <ClipboardList className="h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-500 text-base mb-2">No hay órdenes registradas</p>
+            <p className="text-gray-400 text-sm mb-6">Comienza creando tu primera orden de trabajo</p>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setMostrarDialogoOrden(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Crear Primera Orden
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

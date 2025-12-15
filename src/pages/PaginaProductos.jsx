@@ -10,6 +10,10 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { Badge } from "../components/ui/badge"
+import { Plus, Edit, Trash2, Package, X } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
+import { toast } from "../hooks/user-toast"
 
 export function PaginaProductos() {
   const { tiendaActual } = useContextoTienda()
@@ -96,21 +100,43 @@ export function PaginaProductos() {
 
       await cargarProductos()
       resetearFormulario()
+      toast({
+        title: productoEditando ? "Producto actualizado" : "Producto creado",
+        description: productoEditando 
+          ? "El producto se ha actualizado correctamente"
+          : "El producto se ha creado exitosamente",
+      })
     } catch (error) {
       console.error("Error guardando producto:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el producto. Intenta nuevamente.",
+        variant: "destructive",
+      })
     } finally {
       setCargando(false)
     }
   }
 
   const eliminarProducto = async (id) => {
-    if (window.confirm("¿Estás seguro de eliminar este producto?")) {
-      try {
-        await deleteDoc(doc(db, "tiendas", tiendaActual.id, "productos", id))
-        await cargarProductos()
-      } catch (error) {
-        console.error("Error eliminando producto:", error)
-      }
+    if (!window.confirm("¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.")) {
+      return
+    }
+
+    try {
+      await deleteDoc(doc(db, "tiendas", tiendaActual.id, "productos", id))
+      await cargarProductos()
+      toast({
+        title: "Producto eliminado",
+        description: "El producto se ha eliminado correctamente",
+      })
+    } catch (error) {
+      console.error("Error eliminando producto:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el producto. Intenta nuevamente.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -138,20 +164,32 @@ export function PaginaProductos() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Catálogo de Productos</h1>
-        <Button onClick={() => setMostrarFormulario(true)}>Nuevo Producto</Button>
+    <div className="space-y-6 min-h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Catálogo de Productos</h1>
+          <p className="text-sm text-gray-600 mt-1 leading-tight">Gestiona tu catálogo de productos y servicios</p>
+        </div>
+        <Button 
+          onClick={() => setMostrarFormulario(true)} 
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nuevo Producto
+        </Button>
       </div>
 
-      {mostrarFormulario && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>{productoEditando ? "Editar Producto" : "Nuevo Producto"}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={manejarSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Formulario en Dialog */}
+      <Dialog open={mostrarFormulario} onOpenChange={setMostrarFormulario}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900">
+              {productoEditando ? "Editar Producto" : "Nuevo Producto"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={manejarSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="nombre">Nombre del Producto</Label>
                   <Input
@@ -255,41 +293,97 @@ export function PaginaProductos() {
                 />
               </div>
 
-              <div className="flex gap-2">
-                <Button type="submit" disabled={cargando}>
-                  {cargando ? "Guardando..." : "Guardar"}
-                </Button>
-                <Button type="button" variant="outline" onClick={resetearFormulario}>
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+            <div className="flex gap-2 pt-4">
+              <Button 
+                type="submit" 
+                disabled={cargando}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {cargando ? "Guardando..." : "Guardar"}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={resetearFormulario}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
+      {/* Grid de Productos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {productos.map((producto) => (
-          <Card key={producto.id}>
-            <CardHeader>
-              <CardTitle className="text-lg">{producto.nombre}</CardTitle>
-              <p className="text-sm text-gray-600">
-                {producto.categoria} - {producto.subcategoria}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm mb-2">{producto.descripcion}</p>
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-semibold">€{producto.precioBase}</span>
-                <span className="text-sm text-gray-500">por {producto.unidadMedida}</span>
+          <Card 
+            key={producto.id} 
+            className="border border-gray-200 rounded-xl shadow-md bg-white hover:shadow-lg transition-shadow"
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Package className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base font-semibold text-gray-900 leading-tight truncate">
+                      {producto.nombre}
+                    </CardTitle>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                        {producto.categoria}
+                      </Badge>
+                      {producto.subcategoria && (
+                        <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                          {producto.subcategoria}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mb-4">Tiempo: {producto.tiempoProduccion} días</p>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => editarProducto(producto)}>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {producto.descripcion && (
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2 leading-tight">
+                  {producto.descripcion}
+                </p>
+              )}
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Precio Base</span>
+                  <span className="text-base font-semibold text-gray-900">
+                    €{producto.precioBase?.toFixed(2) || "0.00"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Unidad</span>
+                  <span className="text-sm text-gray-700 font-medium">{producto.unidadMedida}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Tiempo Producción</span>
+                  <span className="text-sm text-gray-700 font-medium">{producto.tiempoProduccion} días</span>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-3 border-t border-gray-100">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => editarProducto(producto)}
+                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  <Edit className="mr-2 h-3 w-3" />
                   Editar
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => eliminarProducto(producto.id)}>
-                  Eliminar
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => eliminarProducto(producto.id)}
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
             </CardContent>
@@ -298,11 +392,25 @@ export function PaginaProductos() {
       </div>
 
       {productos.length === 0 && !cargando && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No hay productos registrados</p>
-          <Button className="mt-4" onClick={() => setMostrarFormulario(true)}>
-            Crear Primer Producto
-          </Button>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Package className="h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-500 text-base mb-2">No hay productos registrados</p>
+            <p className="text-gray-400 text-sm mb-6">Comienza agregando tu primer producto al catálogo</p>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setMostrarFormulario(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Crear Primer Producto
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {cargando && productos.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Cargando productos...</p>
         </div>
       )}
     </div>

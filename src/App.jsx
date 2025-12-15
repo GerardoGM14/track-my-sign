@@ -17,7 +17,9 @@ import { PortalCliente } from "./pages/PortalCliente"
 import { PaginaNoEncontrada } from "./pages/PaginaNoEncontrada"
 import { PaginaFacturacion } from "./pages/PaginaFacturacion"
 import PaginaUsuarios from "./pages/PaginaUsuarios"
+import PaginaConfiguracion from "./pages/PaginaConfiguracion"
 import { RutaDashboard } from "./components/RutaDashboard"
+import LayoutDashboard from "./components/LayoutDashboard"
 
 function App() {
   return (
@@ -46,7 +48,9 @@ function App() {
                 path="/:slugTienda/productos"
                 element={
                   <RutaProtegida>
-                    <PaginaProductos />
+                    <LayoutDashboard>
+                      <PaginaProductos />
+                    </LayoutDashboard>
                   </RutaProtegida>
                 }
               />
@@ -54,7 +58,9 @@ function App() {
                 path="/:slugTienda/precios"
                 element={
                   <RutaProtegida>
-                    <PaginaPrecios />
+                    <LayoutDashboard>
+                      <PaginaPrecios />
+                    </LayoutDashboard>
                   </RutaProtegida>
                 }
               />
@@ -62,7 +68,9 @@ function App() {
                 path="/:slugTienda/cotizaciones"
                 element={
                   <RutaProtegida>
-                    <PaginaCotizaciones />
+                    <LayoutDashboard>
+                      <PaginaCotizaciones />
+                    </LayoutDashboard>
                   </RutaProtegida>
                 }
               />
@@ -70,7 +78,9 @@ function App() {
                 path="/:slugTienda/ordenes"
                 element={
                   <RutaProtegida>
-                    <PaginaOrdenes />
+                    <LayoutDashboard>
+                      <PaginaOrdenes />
+                    </LayoutDashboard>
                   </RutaProtegida>
                 }
               />
@@ -78,7 +88,9 @@ function App() {
                 path="/:slugTienda/clientes"
                 element={
                   <RutaProtegida>
-                    <PaginaClientes />
+                    <LayoutDashboard>
+                      <PaginaClientes />
+                    </LayoutDashboard>
                   </RutaProtegida>
                 }
               />
@@ -86,7 +98,9 @@ function App() {
                 path="/:slugTienda/facturacion"
                 element={
                   <RutaProtegida>
-                    <PaginaFacturacion />
+                    <LayoutDashboard>
+                      <PaginaFacturacion />
+                    </LayoutDashboard>
                   </RutaProtegida>
                 }
               />
@@ -94,7 +108,19 @@ function App() {
                 path="/:slugTienda/usuarios"
                 element={
                   <RutaProtegida>
-                    <PaginaUsuarios />
+                    <LayoutDashboard>
+                      <PaginaUsuarios />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/:slugTienda/configuracion"
+                element={
+                  <RutaProtegida>
+                    <LayoutDashboard>
+                      <PaginaConfiguracion />
+                    </LayoutDashboard>
                   </RutaProtegida>
                 }
               />

@@ -20,7 +20,7 @@ export function Layout({ children }) {
     }
   }
 
-  const esPaginaPublica = ["/", "/planes", "/login", "/register"].includes(location.pathname)
+  const esPaginaPublica = ["/", "/planes", "/login", "/register", "/precios"].includes(location.pathname)
   const esPaginaTienda =
     location.pathname.match(/^\/[^/]+$/) || // Dashboard principal /:slugTienda
     location.pathname.includes("/productos") ||
@@ -28,11 +28,15 @@ export function Layout({ children }) {
     location.pathname.includes("/cotizaciones") ||
     location.pathname.includes("/ordenes") ||
     location.pathname.includes("/clientes") ||
-    location.pathname.includes("/facturacion")
+    location.pathname.includes("/facturacion") ||
+    location.pathname.includes("/usuarios")
+  
+  // No mostrar header si no hay usuario y no es una página pública conocida (probablemente 404)
+  const mostrarHeader = !esPaginaPublica && !esPaginaTienda && usuarioActual
 
   return (
     <div className="min-h-screen bg-background">
-      {!esPaginaPublica && !esPaginaTienda && (
+      {mostrarHeader && (
         <header className="border-b bg-card">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex items-center space-x-4">

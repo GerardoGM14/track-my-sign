@@ -194,19 +194,22 @@ export default function PaginaUsuarios() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 min-h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h1>
-          <p className="text-gray-600">Administra empleados y clientes de tu tienda</p>
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Gestión de Usuarios</h1>
+          <p className="text-sm text-gray-600 mt-1 leading-tight">Administra empleados y clientes de tu tienda</p>
         </div>
+        <Button 
+          onClick={abrirModalCreacion}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nuevo Usuario
+        </Button>
+        
         <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
-          <DialogTrigger asChild>
-            <Button onClick={abrirModalCreacion} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Usuario
-            </Button>
-          </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{usuarioEditando ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
@@ -275,10 +278,18 @@ export default function PaginaUsuarios() {
               )}
 
               <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setModalAbierto(false)}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setModalAbierto(false)}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  type="submit" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   {usuarioEditando ? "Actualizar" : "Crear Usuario"}
                 </Button>
               </div>
@@ -288,89 +299,112 @@ export default function PaginaUsuarios() {
       </div>
 
       {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Empleados</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600 leading-tight">Total Empleados</CardTitle>
+            <Users className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{usuarios.filter((u) => u.rol === "employee").length}</div>
+            <div className="text-2xl font-bold text-gray-900 leading-tight">{usuarios.filter((u) => u.rol === "employee").length}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clientes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600 leading-tight">Total Clientes</CardTitle>
+            <Users className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{usuarios.filter((u) => u.rol === "customer").length}</div>
+            <div className="text-2xl font-bold text-gray-900 leading-tight">{usuarios.filter((u) => u.rol === "customer").length}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Usuarios Activos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600 leading-tight">Usuarios Activos</CardTitle>
+            <Users className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{usuarios.filter((u) => u.activo).length}</div>
+            <div className="text-2xl font-bold text-green-600 leading-tight">{usuarios.filter((u) => u.activo).length}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Lista de usuarios */}
-      <Card>
+      <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
         <CardHeader>
-          <CardTitle>Lista de Usuarios</CardTitle>
-          <CardDescription>Todos los empleados y clientes de tu tienda</CardDescription>
+          <CardTitle className="text-base font-semibold text-gray-900 leading-tight">Lista de Usuarios</CardTitle>
+          <CardDescription className="text-sm text-gray-600 leading-tight">Todos los empleados y clientes de tu tienda</CardDescription>
         </CardHeader>
         <CardContent>
           {usuarios.length === 0 ? (
-            <div className="text-center py-8">
-              <Users className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay usuarios</h3>
-              <p className="mt-1 text-sm text-gray-500">Comienza creando tu primer empleado o cliente.</p>
+            <div className="text-center py-12">
+              <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-base font-medium text-gray-900 mb-2">No hay usuarios</h3>
+              <p className="text-sm text-gray-500 mb-6">Comienza creando tu primer empleado o cliente.</p>
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={abrirModalCreacion}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Crear Primer Usuario
+              </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {usuarios.map((usuario) => (
-                <div key={usuario.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-medium">{usuario.nombre.charAt(0).toUpperCase()}</span>
+            <div className="space-y-3">
+              {usuarios.map((usuarioItem) => (
+                <div 
+                  key={usuarioItem.id} 
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow bg-white"
+                >
+                  <div className="flex items-center space-x-4 flex-1 min-w-0">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-blue-600 font-semibold text-sm">
+                        {usuarioItem.nombre?.charAt(0).toUpperCase() || "U"}
+                      </span>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{usuario.nombre}</h3>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span className="flex items-center">
-                          <Mail className="w-3 h-3 mr-1" />
-                          {usuario.email}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm leading-tight">{usuarioItem.nombre}</h3>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                        <span className="flex items-center truncate">
+                          <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
+                          <span className="truncate">{usuarioItem.email}</span>
                         </span>
-                        {usuario.telefono && (
+                        {usuarioItem.telefono && (
                           <span className="flex items-center">
-                            <Phone className="w-3 h-3 mr-1" />
-                            {usuario.telefono}
+                            <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
+                            {usuarioItem.telefono}
                           </span>
                         )}
-                        <span className="flex items-center">
-                          <Calendar className="w-3 h-3 mr-1" />
-                          {usuario.fechaCreacion?.toDate().toLocaleDateString()}
-                        </span>
+                        {usuarioItem.fechaCreacion && (
+                          <span className="flex items-center">
+                            <Calendar className="w-3 h-3 mr-1 flex-shrink-0" />
+                            {usuarioItem.fechaCreacion?.toDate 
+                              ? usuarioItem.fechaCreacion.toDate().toLocaleDateString()
+                              : new Date(usuarioItem.fechaCreacion).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getRolBadgeColor(usuario.rol)}>{getRolLabel(usuario.rol)}</Badge>
-                    <Button variant="outline" size="sm" onClick={() => abrirModalEdicion(usuario)}>
+                  <div className="flex items-center space-x-2 flex-shrink-0">
+                    <Badge className={`${getRolBadgeColor(usuarioItem.rol)} text-xs capitalize`}>
+                      {getRolLabel(usuarioItem.rol)}
+                    </Badge>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => abrirModalEdicion(usuarioItem)}
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
                       <Edit className="w-3 h-3" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => eliminarUsuario(usuario.id)}
-                      className="text-red-600 hover:text-red-700"
+                      onClick={() => eliminarUsuario(usuarioItem.id)}
+                      className="border-red-300 text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>

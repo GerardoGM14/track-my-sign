@@ -11,7 +11,8 @@ import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Badge } from "../components/ui/badge"
-import { Plus, Trash2, FileText, Send } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
+import { Plus, Trash2, FileText, Send, Edit, CheckCircle, XCircle, Clock, DollarSign } from "lucide-react"
 
 export function PaginaCotizaciones() {
   const { tiendaActual } = useContextoTienda()
@@ -229,8 +230,19 @@ export function PaginaCotizaciones() {
 
       await cargarDatos()
       resetearFormulario()
+      toast({
+        title: cotizacionEditando ? "Cotización actualizada" : "Cotización creada",
+        description: cotizacionEditando
+          ? "La cotización se ha actualizado correctamente"
+          : "La cotización se ha creado exitosamente",
+      })
     } catch (error) {
       console.error("Error guardando cotización:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo guardar la cotización. Intenta nuevamente.",
+        variant: "destructive",
+      })
     } finally {
       setCargando(false)
     }
@@ -243,19 +255,39 @@ export function PaginaCotizaciones() {
         fechaActualizacion: new Date(),
       })
       await cargarDatos()
+      toast({
+        title: "Estado actualizado",
+        description: `La cotización se ha marcado como ${nuevoEstado}`,
+      })
     } catch (error) {
       console.error("Error actualizando estado:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado. Intenta nuevamente.",
+        variant: "destructive",
+      })
     }
   }
 
   const eliminarCotizacion = async (id) => {
-    if (window.confirm("¿Estás seguro de eliminar esta cotización?")) {
-      try {
-        await deleteDoc(doc(db, "tiendas", tiendaActual.id, "cotizaciones", id))
-        await cargarDatos()
-      } catch (error) {
-        console.error("Error eliminando cotización:", error)
-      }
+    if (!window.confirm("¿Estás seguro de eliminar esta cotización? Esta acción no se puede deshacer.")) {
+      return
+    }
+
+    try {
+      await deleteDoc(doc(db, "tiendas", tiendaActual.id, "cotizaciones", id))
+      await cargarDatos()
+      toast({
+        title: "Cotización eliminada",
+        description: "La cotización se ha eliminado correctamente",
+      })
+    } catch (error) {
+      console.error("Error eliminando cotización:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la cotización. Intenta nuevamente.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -298,23 +330,32 @@ export function PaginaCotizaciones() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Cotizaciones</h1>
-        <Button onClick={() => setMostrarFormulario(true)}>
-          <Plus className="w-4 h-4 mr-2" />
+    <div className="space-y-6 min-h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Cotizaciones</h1>
+          <p className="text-sm text-gray-600 mt-1 leading-tight">Gestiona tus cotizaciones y propuestas comerciales</p>
+        </div>
+        <Button 
+          onClick={() => setMostrarFormulario(true)} 
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="mr-2 h-4 w-4" />
           Nueva Cotización
         </Button>
       </div>
 
-      {mostrarFormulario && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>{cotizacionEditando ? "Editar Cotización" : "Nueva Cotización"}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={manejarSubmit} className="space-y-6">
-              {/* Información del cliente */}
+      {/* Formulario en Dialog */}
+      <Dialog open={mostrarFormulario} onOpenChange={setMostrarFormulario}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900">
+              {cotizacionEditando ? "Editar Cotización" : "Nueva Cotización"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={manejarSubmit} className="space-y-6">
+            {/* Información del cliente */}
               <div>
                 <h3 className="text-lg font-semibold mb-4">Información del Cliente</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -570,89 +611,167 @@ export function PaginaCotizaciones() {
                 />
               </div>
 
-              <div className="flex gap-2">
-                <Button type="submit" disabled={cargando || formulario.items.length === 0}>
-                  {cargando ? "Guardando..." : "Guardar Cotización"}
-                </Button>
-                <Button type="button" variant="outline" onClick={resetearFormulario}>
-                  Cancelar
-                </Button>
-              </div>
-            </form>
+            <div className="flex gap-2 pt-4">
+              <Button 
+                type="submit" 
+                disabled={cargando || formulario.items.length === 0}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {cargando ? "Guardando..." : "Guardar Cotización"}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={resetearFormulario}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lista de cotizaciones */}
+      <div className="grid grid-cols-1 gap-4">
+        {cotizaciones.map((cotizacion) => {
+          const obtenerIconoEstado = (estado) => {
+            switch (estado) {
+              case "aprobada":
+                return <CheckCircle className="h-4 w-4" />
+              case "rechazada":
+                return <XCircle className="h-4 w-4" />
+              case "enviada":
+                return <Send className="h-4 w-4" />
+              case "vencida":
+                return <Clock className="h-4 w-4" />
+              default:
+                return <FileText className="h-4 w-4" />
+            }
+          }
+
+          return (
+            <Card 
+              key={cotizacion.id} 
+              className="border border-gray-200 rounded-xl shadow-md bg-white hover:shadow-lg transition-shadow"
+            >
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-base font-semibold text-gray-900 leading-tight">
+                        {cotizacion.numero || "Sin número"}
+                      </CardTitle>
+                      <p className="text-sm text-gray-600 mt-1 leading-tight">
+                        {cotizacion.cliente?.nombre || "Sin cliente"}
+                        {cotizacion.cliente?.empresa && ` - ${cotizacion.cliente.empresa}`}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge className={`${obtenerColorEstado(cotizacion.estado)} flex items-center gap-1 capitalize`}>
+                    {obtenerIconoEstado(cotizacion.estado)}
+                    {cotizacion.estado}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-gray-600">
+                        <span className="font-medium">{cotizacion.items?.length || 0}</span> items
+                      </span>
+                      <span className="text-gray-900 font-semibold flex items-center gap-1">
+                        <DollarSign className="h-4 w-4" />
+                        €{cotizacion.totales?.total || "0.00"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Creada: {cotizacion.fechaCreacion?.seconds 
+                        ? new Date(cotizacion.fechaCreacion.seconds * 1000).toLocaleDateString()
+                        : "Fecha no disponible"}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {cotizacion.estado === "borrador" && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => cambiarEstadoCotizacion(cotizacion.id, "enviada")}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Send className="h-3 w-3 mr-1" />
+                        Enviar
+                      </Button>
+                    )}
+                    {cotizacion.estado === "enviada" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => cambiarEstadoCotizacion(cotizacion.id, "aprobada")}
+                          className="border-green-300 text-green-700 hover:bg-green-50"
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Aprobar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => cambiarEstadoCotizacion(cotizacion.id, "rechazada")}
+                          className="border-red-300 text-red-700 hover:bg-red-50"
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Rechazar
+                        </Button>
+                      </>
+                    )}
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      PDF
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => eliminarCotizacion(cotizacion.id)}
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {cotizaciones.length === 0 && !cargando && (
+        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-500 text-base mb-2">No hay cotizaciones registradas</p>
+            <p className="text-gray-400 text-sm mb-6">Comienza creando tu primera cotización</p>
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setMostrarFormulario(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Crear Primera Cotización
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Lista de cotizaciones */}
-      <div className="grid grid-cols-1 gap-4">
-        {cotizaciones.map((cotizacion) => (
-          <Card key={cotizacion.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{cotizacion.numero}</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    {cotizacion.cliente.nombre} - {cotizacion.cliente.empresa}
-                  </p>
-                </div>
-                <Badge className={obtenerColorEstado(cotizacion.estado)}>{cotizacion.estado}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <p className="text-sm text-gray-600">
-                    {cotizacion.items?.length || 0} items - Total: €{cotizacion.totales?.total || "0.00"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Creada: {new Date(cotizacion.fechaCreacion?.seconds * 1000).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  {cotizacion.estado === "borrador" && (
-                    <Button size="sm" onClick={() => cambiarEstadoCotizacion(cotizacion.id, "enviada")}>
-                      <Send className="w-4 h-4 mr-1" />
-                      Enviar
-                    </Button>
-                  )}
-                  {cotizacion.estado === "enviada" && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => cambiarEstadoCotizacion(cotizacion.id, "aprobada")}
-                      >
-                        Aprobar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => cambiarEstadoCotizacion(cotizacion.id, "rechazada")}
-                      >
-                        Rechazar
-                      </Button>
-                    </>
-                  )}
-                  <Button size="sm" variant="outline">
-                    <FileText className="w-4 h-4 mr-1" />
-                    PDF
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => eliminarCotizacion(cotizacion.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {cotizaciones.length === 0 && !cargando && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No hay cotizaciones registradas</p>
-          <Button className="mt-4" onClick={() => setMostrarFormulario(true)}>
-            Crear Primera Cotización
-          </Button>
+      {cargando && cotizaciones.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Cargando cotizaciones...</p>
         </div>
       )}
     </div>
