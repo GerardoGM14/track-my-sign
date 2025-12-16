@@ -13,7 +13,7 @@ import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Badge } from "../components/ui/badge"
-import { Plus, Edit, Trash2, Package, X, Search, MoreVertical, Eye, BarChart3, Grid, ChevronDown, Circle, Tag, DollarSign, Hash, Image as ImageIcon, Layers, CheckCircle, Star } from "lucide-react"
+import { Plus, Edit, Trash2, Package, X, Search, MoreVertical, Eye, BarChart3, Grid, ChevronDown, Circle, Tag, DollarSign, Hash, Image as ImageIcon, Layers, CheckCircle, Star, Heart, ShoppingCart, Minus } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import { toast } from "../hooks/user-toast"
 
@@ -32,11 +32,14 @@ export function PaginaProductos() {
   const [mostrarSidebar, setMostrarSidebar] = useState(false)
   const [mostrarVerProducto, setMostrarVerProducto] = useState(false)
   const [productoViendo, setProductoViendo] = useState(null)
+  const [imagenSeleccionada, setImagenSeleccionada] = useState(0)
+  const [cantidad, setCantidad] = useState(1)
   const [mostrarOrdenesProducto, setMostrarOrdenesProducto] = useState(false)
   const [productoOrdenes, setProductoOrdenes] = useState(null)
   const [mostrarConfirmarEliminar, setMostrarConfirmarEliminar] = useState(false)
   const [productoAEliminar, setProductoAEliminar] = useState(null)
   const [subiendoImagen, setSubiendoImagen] = useState(false)
+  const [imagenesSubiendo, setImagenesSubiendo] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef(null)
   const menuRefs = useRef({})
@@ -48,6 +51,7 @@ export function PaginaProductos() {
     subcategoria: "",
     precioBase: "",
     precioVenta: "",
+    porcentajeDescuento: "",
     sku: "",
     stock: "",
     unidadMedida: "unidad",
@@ -55,7 +59,7 @@ export function PaginaProductos() {
     acabados: [],
     tiempoProduccion: "",
     activo: true,
-    imagen: "",
+    imagenes: [],
     destacado: false,
     tags: [],
   })
@@ -131,17 +135,21 @@ export function PaginaProductos() {
         descripcion: formulario.descripcion || "",
         categoria: formulario.categoria || "",
         subcategoria: formulario.subcategoria || "",
-        precioBase: Number.parseFloat(formulario.precioBase || 0),
-        precioVenta: Number.parseFloat(formulario.precioVenta || formulario.precioBase || 0),
+        precioVenta: Number.parseFloat(formulario.precioVenta || 0),
+        precioBase: Number.parseFloat(formulario.precioBase || formulario.precioVenta || 0),
+        porcentajeDescuento: Number.parseFloat(formulario.porcentajeDescuento || 0),
         sku: formulario.sku || "",
         stock: Number.parseInt(formulario.stock || 0),
         unidadMedida: formulario.unidadMedida || "unidad",
         materiales: formulario.materiales || [],
         acabados: formulario.acabados || [],
         tiempoProduccion: Number.parseInt(formulario.tiempoProduccion || 0),
-        activo: productoEditando ? (formulario.activo !== undefined ? formulario.activo : true) : true, // Siempre activo por defecto en productos nuevos
-        imagen: formulario.imagen || "",
-        destacado: formulario.destacado || false,
+        activo: productoEditando ? (formulario.activo !== undefined ? formulario.activo : true) : true,
+        imagenes: formulario.imagenes || [],
+        // Mantener compatibilidad con productos antiguos que tienen 'imagen' (string)
+        imagen: formulario.imagenes && formulario.imagenes.length > 0 ? formulario.imagenes[0] : "",
+        // Mantener el destacado actual cuando se edita (solo se cambia desde la tabla)
+        destacado: productoEditando ? (productoEditando.destacado || false) : false,
         tags: formulario.tags || [],
         fechaCreacion: productoEditando ? productoEditando.fechaCreacion : new Date(),
         fechaActualizacion: new Date(),
@@ -153,17 +161,22 @@ export function PaginaProductos() {
         await addDoc(productosRef, datosProducto)
       }
 
-      await cargarProductos()
+      // Cerrar sidebar inmediatamente para mejor UX
       resetearFormulario()
-      // Cerrar sidebar después de crear producto
-      if (!productoEditando) {
-        setMostrarSidebar(false)
-      }
+      setProductoEditando(null)
+      setMostrarSidebar(false)
+      
+      // Mostrar toast inmediatamente
       toast({
         title: productoEditando ? "Producto actualizado" : "Producto creado",
         description: productoEditando 
           ? "El producto se ha actualizado correctamente"
           : "El producto se ha creado exitosamente",
+      })
+      
+      // Cargar productos en segundo plano
+      cargarProductos().catch(error => {
+        console.error("Error recargando productos:", error)
       })
     } catch (error) {
       console.error("Error guardando producto:", error)
@@ -219,11 +232,11 @@ export function PaginaProductos() {
     
     console.log("tiendaActual válida:", tiendaActual.id)
 
-    // Validar que ya no haya una imagen cargada
-    if (formulario.imagen) {
+    // Validar límite de imágenes (máximo 10)
+    if (formulario.imagenes && formulario.imagenes.length >= 10) {
       toast({
-        title: "Imagen ya cargada",
-        description: "Solo puedes subir una imagen por producto. Elimina la imagen actual si deseas subir otra.",
+        title: "Límite alcanzado",
+        description: "Puedes subir un máximo de 10 imágenes por producto.",
         variant: "destructive",
       })
       return
@@ -252,6 +265,7 @@ export function PaginaProductos() {
 
     try {
       setSubiendoImagen(true)
+      setImagenesSubiendo(prev => prev + 1)
       
       console.log("Iniciando subida de imagen...", {
         tiendaId: tiendaActual.id,
@@ -277,8 +291,11 @@ export function PaginaProductos() {
       const downloadURL = await getDownloadURL(storageRef)
       console.log("URL obtenida:", downloadURL)
       
-      // Actualizar formulario con la URL
-      setFormulario(prev => ({ ...prev, imagen: downloadURL }))
+      // Actualizar formulario agregando la nueva imagen al array
+      setFormulario(prev => ({ 
+        ...prev, 
+        imagenes: [...(prev.imagenes || []), downloadURL]
+      }))
       console.log("Formulario actualizado con URL:", downloadURL)
       
       toast({
@@ -311,7 +328,14 @@ export function PaginaProductos() {
         variant: "destructive",
       })
     } finally {
-      setSubiendoImagen(false)
+      setImagenesSubiendo(prev => {
+        const nuevo = prev - 1
+        if (nuevo <= 0) {
+          setSubiendoImagen(false)
+          return 0
+        }
+        return nuevo
+      })
     }
   }
 
@@ -339,15 +363,15 @@ export function PaginaProductos() {
       }
 
       await deleteDoc(doc(db, "tiendas", tiendaActual.id, "productos", productoAEliminar.id))
-      await cargarProductos()
+        await cargarProductos()
       setMostrarConfirmarEliminar(false)
       setProductoAEliminar(null)
       toast({
         title: "Producto eliminado",
         description: "El producto se ha eliminado correctamente",
       })
-    } catch (error) {
-      console.error("Error eliminando producto:", error)
+      } catch (error) {
+        console.error("Error eliminando producto:", error)
       toast({
         title: "Error",
         description: "No se pudo eliminar el producto. Intenta nuevamente.",
@@ -363,8 +387,11 @@ export function PaginaProductos() {
       descripcion: producto.descripcion || "",
       categoria: producto.categoria || "",
       subcategoria: producto.subcategoria || "",
-      precioBase: producto.precioBase || 0,
       precioVenta: producto.precioVenta || producto.precioBase || 0,
+      precioBase: producto.precioBase || producto.precioVenta || 0,
+      porcentajeDescuento: producto.porcentajeDescuento || (producto.precioBase && producto.precioVenta && producto.precioBase > producto.precioVenta 
+        ? Math.round(((producto.precioBase - producto.precioVenta) / producto.precioBase) * 100 * 10) / 10 
+        : ""),
       sku: producto.sku || "",
       stock: producto.stock || 0,
       unidadMedida: producto.unidadMedida || "unidad",
@@ -372,7 +399,8 @@ export function PaginaProductos() {
       acabados: producto.acabados || [],
       tiempoProduccion: producto.tiempoProduccion || 0,
       activo: producto.activo !== undefined ? producto.activo : true,
-      imagen: producto.imagen || "",
+      // Soporte para productos antiguos con 'imagen' (string) y nuevos con 'imagenes' (array)
+      imagenes: producto.imagenes || (producto.imagen ? [producto.imagen] : []),
       destacado: producto.destacado || false,
       tags: producto.tags || [],
     })
@@ -387,6 +415,7 @@ export function PaginaProductos() {
       subcategoria: "",
       precioBase: "",
       precioVenta: "",
+      porcentajeDescuento: "",
       sku: "",
       stock: "",
       unidadMedida: "unidad",
@@ -394,7 +423,7 @@ export function PaginaProductos() {
       acabados: [],
       tiempoProduccion: "",
       activo: true,
-      imagen: "",
+      imagenes: [],
       destacado: false,
       tags: [],
     })
@@ -476,7 +505,7 @@ export function PaginaProductos() {
               <SelectValue className="flex items-center gap-2">
                 {filtroStatus === "active" && <Circle className="h-2 w-2 fill-green-500 text-green-500 flex-shrink-0" />}
                 {filtroStatus === "inactive" && <Circle className="h-2 w-2 fill-orange-500 text-orange-500 flex-shrink-0" />}
-                {filtroStatus === "featured" && <Circle className="h-2 w-2 fill-yellow-500 text-yellow-500 flex-shrink-0" />}
+                {filtroStatus === "featured" && <Star className="h-2 w-2 fill-yellow-500 text-yellow-500 flex-shrink-0" />}
                 {filtroStatus === "outofstock" && <Circle className="h-2 w-2 fill-red-500 text-red-500 flex-shrink-0" />}
                 <span className="truncate">{obtenerTextoEstado(filtroStatus)}</span>
               </SelectValue>
@@ -514,7 +543,7 @@ export function PaginaProductos() {
                 className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5 text-sm rounded-sm pl-8"
               >
                 <div className="flex items-center gap-2">
-                  <Circle className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500 flex-shrink-0" />
+                  <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500 flex-shrink-0" />
                   <span>Destacados</span>
                 </div>
               </SelectItem>
@@ -552,8 +581,8 @@ export function PaginaProductos() {
               {productoEditando ? "Editar Producto" : "Nuevo Producto"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={manejarSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={manejarSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="nombre">Nombre del Producto</Label>
                   <Input
@@ -718,18 +747,18 @@ export function PaginaProductos() {
                 disabled={cargando}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {cargando ? "Guardando..." : "Guardar"}
-              </Button>
+                  {cargando ? "Guardando..." : "Guardar"}
+                </Button>
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={resetearFormulario}
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
-                Cancelar
-              </Button>
-            </div>
-          </form>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
         </DialogContent>
       </Dialog>
 
@@ -821,7 +850,7 @@ export function PaginaProductos() {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col items-start gap-1.5">
                         {producto.activo ? (
                           <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 flex items-center gap-1">
                             <Circle className="h-2 w-2 fill-green-500 text-green-500" />
@@ -833,6 +862,12 @@ export function PaginaProductos() {
                             Inactivo
                           </Badge>
                         )}
+                        {producto.destacado && (
+                          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-700 flex items-center gap-1">
+                            <Star className="h-2 w-2 fill-yellow-500 text-yellow-500" />
+                            Destacado
+                          </Badge>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -840,18 +875,29 @@ export function PaginaProductos() {
                         <button
                           onClick={async () => {
                             try {
+                              const nuevoDestacado = !producto.destacado
                               await updateDoc(doc(db, "tiendas", tiendaActual.id, "productos", producto.id), {
-                                destacado: !producto.destacado
+                                destacado: nuevoDestacado,
+                                // Si se marca como destacado, debe estar activo
+                                activo: nuevoDestacado ? true : producto.activo
                               })
-                              await cargarProductos()
+                              // Cargar productos en segundo plano para mejor UX
+                              cargarProductos().catch(error => {
+                                console.error("Error recargando productos:", error)
+                              })
                               toast({
                                 title: producto.destacado ? "Producto removido de destacados" : "Producto destacado",
                                 description: producto.destacado 
                                   ? "El producto ya no está destacado"
-                                  : "El producto ahora está destacado",
+                                  : "El producto ahora está destacado y activo",
                               })
                             } catch (error) {
                               console.error("Error actualizando producto:", error)
+                              toast({
+                                title: "Error",
+                                description: "No se pudo actualizar el producto",
+                                variant: "destructive",
+                              })
                             }
                           }}
                           className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -978,9 +1024,9 @@ export function PaginaProductos() {
             >
               <Plus className="mr-2 h-4 w-4" />
               Crear Primer Producto
-            </Button>
-          </CardContent>
-        </Card>
+                </Button>
+            </CardContent>
+          </Card>
       )}
 
       {cargando && productos.length === 0 && (
@@ -1008,7 +1054,11 @@ export function PaginaProductos() {
             margin: 0,
             padding: 0
           }}
-          onClick={() => setMostrarSidebar(false)}
+          onClick={() => {
+            setMostrarSidebar(false)
+            setProductoEditando(null)
+            resetearFormulario()
+          }}
         />
       )}
 
@@ -1027,12 +1077,20 @@ export function PaginaProductos() {
                   <Package className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Nuevo Producto</h2>
-                  <p className="text-sm text-gray-500">Completa la información del producto</p>
-                </div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {productoEditando ? "Editar Producto" : "Nuevo Producto"}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {productoEditando ? "Modifica la información del producto" : "Completa la información del producto"}
+                  </p>
+              </div>
               </div>
               <button
-                onClick={() => setMostrarSidebar(false)}
+                onClick={() => {
+            setMostrarSidebar(false)
+            setProductoEditando(null)
+            resetearFormulario()
+          }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -1089,6 +1147,21 @@ export function PaginaProductos() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div>
+                  <Label htmlFor="descripcion-sidebar" className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                    <Tag className="h-3.5 w-3.5 text-gray-400" />
+                    Descripción del Producto
+                  </Label>
+                  <Textarea
+                    id="descripcion-sidebar"
+                    value={formulario.descripcion}
+                    onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value })}
+                    placeholder="Describe las características y detalles del producto..."
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[100px] resize-y"
+                    rows={4}
+                  />
+                </div>
               </div>
 
               {/* Sección: Precios y Stock */}
@@ -1100,27 +1173,8 @@ export function PaginaProductos() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="precioBase-sidebar" className="text-sm font-medium text-gray-700 mb-1.5 block">
-                      Precio Regular <span className="text-red-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">€</span>
-                      <Input
-                        id="precioBase-sidebar"
-                        type="number"
-                        step="0.01"
-                        value={formulario.precioBase}
-                        onChange={(e) => setFormulario({ ...formulario, precioBase: e.target.value })}
-                        placeholder="0.00"
-                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 pl-8"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
                     <Label htmlFor="precioVenta-sidebar" className="text-sm font-medium text-gray-700 mb-1.5 block">
-                      Precio de Venta
+                      Precio de Venta <span className="text-red-500">*</span>
                     </Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">€</span>
@@ -1129,13 +1183,65 @@ export function PaginaProductos() {
                         type="number"
                         step="0.01"
                         value={formulario.precioVenta}
-                        onChange={(e) => setFormulario({ ...formulario, precioVenta: e.target.value })}
+                        onChange={(e) => {
+                          const precioVenta = e.target.value
+                          const porcentaje = parseFloat(formulario.porcentajeDescuento) || 0
+                          let precioBase = precioVenta
+                          if (precioVenta && porcentaje > 0) {
+                            precioBase = (parseFloat(precioVenta) / (1 - porcentaje / 100)).toFixed(2)
+                          }
+                          setFormulario({ ...formulario, precioVenta, precioBase })
+                        }}
                         placeholder="0.00"
                         className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 pl-8"
+                        required
                       />
                     </div>
                   </div>
+
+                  <div>
+                    <Label htmlFor="porcentajeDescuento-sidebar" className="text-sm font-medium text-gray-700 mb-1.5 block">
+                      % Descuento
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
+                      <Input
+                        id="porcentajeDescuento-sidebar"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={formulario.porcentajeDescuento}
+                        onChange={(e) => {
+                          const porcentaje = e.target.value
+                          const precioVenta = parseFloat(formulario.precioVenta) || 0
+                          let precioBase = formulario.precioBase
+                          if (precioVenta && porcentaje) {
+                            precioBase = (precioVenta / (1 - parseFloat(porcentaje) / 100)).toFixed(2)
+                          }
+                          setFormulario({ ...formulario, porcentajeDescuento: porcentaje, precioBase })
+                        }}
+                        placeholder="0"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-8"
+                      />
+                    </div>
+                    {formulario.porcentajeDescuento && parseFloat(formulario.porcentajeDescuento) > 0 && formulario.precioVenta && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Precio original: €{formulario.precioBase || '0.00'}
+                      </p>
+                    )}
+                  </div>
                 </div>
+                
+                {formulario.porcentajeDescuento && parseFloat(formulario.porcentajeDescuento) > 0 && formulario.precioVenta && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                    <p className="text-xs text-blue-700">
+                      <span className="font-semibold">Precio de venta:</span> €{formulario.precioVenta} 
+                      <span className="text-gray-500 line-through ml-2">€{formulario.precioBase || '0.00'}</span>
+                      <span className="ml-2 text-blue-600 font-semibold">({formulario.porcentajeDescuento}% OFF)</span>
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -1176,6 +1282,50 @@ export function PaginaProductos() {
                   <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Clasificación</h3>
                 </div>
 
+                {productoEditando && (
+                  <div>
+                    <Label htmlFor="estado-sidebar" className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                      <Circle className="h-3.5 w-3.5 text-gray-400" />
+                      Estado <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formulario.activo ? "activo" : "inactivo"}
+                      onValueChange={(value) => {
+                        setFormulario({ ...formulario, activo: value === "activo" })
+                      }}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10 w-full">
+                        <SelectValue placeholder="Seleccionar estado">
+                          <div className="flex items-center gap-2">
+                            <Circle className={`h-2.5 w-2.5 ${formulario.activo ? 'fill-green-500 text-green-500' : 'fill-orange-500 text-orange-500'}`} />
+                            <span>{formulario.activo ? "Activo" : "Inactivo"}</span>
+                          </div>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-[102]">
+                        <SelectItem 
+                          value="activo"
+                          className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5 pl-8"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Circle className="h-2.5 w-2.5 fill-green-500 text-green-500" />
+                            <span>Activo</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem 
+                          value="inactivo"
+                          className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5 pl-8"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Circle className="h-2.5 w-2.5 fill-orange-500 text-orange-500" />
+                            <span>Inactivo</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div>
                   <Label htmlFor="tags-sidebar" className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
                     <Tag className="h-3.5 w-3.5 text-gray-400" />
@@ -1183,6 +1333,7 @@ export function PaginaProductos() {
                   </Label>
                   <Input
                     id="tags-sidebar"
+                    value={formulario.tags?.join(', ') || ''}
                     placeholder="Separadas por comas (ej: etiqueta1, etiqueta2)"
                     onChange={(e) => {
                       const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
@@ -1201,40 +1352,140 @@ export function PaginaProductos() {
                   <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Imagen del Producto</h3>
                 </div>
 
-                {formulario.imagen ? (
-                  // Vista de lista cuando hay imagen cargada
-                  <div className="border border-gray-200 rounded-md bg-white">
-                    <div className="flex items-center gap-4 p-4">
-                      <div className="relative flex-shrink-0">
-                        <img 
-                          src={formulario.imagen} 
-                          alt="Imagen del producto" 
-                          className="w-20 h-20 rounded-md object-cover border border-gray-200"
-                          onError={(e) => {
-                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80"%3E%3Crect fill="%23f3f4f6" width="80" height="80"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="12"%3EImagen%3C/text%3E%3C/svg%3E'
-                          }}
-                        />
-                        <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-1 shadow-md">
-                          <CheckCircle className="h-3 w-3" />
+                {/* Input file siempre disponible (oculto) - fuera del condicional para que siempre esté accesible */}
+                <input
+                  key="file-input-multiple"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    console.log("Input file onChange disparado, files:", e.target.files)
+                    if (e.target.files && e.target.files.length > 0) {
+                      const files = Array.from(e.target.files)
+                      const maxFiles = 10 - (formulario.imagenes?.length || 0)
+                      const filesToProcess = files.slice(0, maxFiles)
+                      
+                      if (files.length > maxFiles) {
+                        toast({
+                          title: "Límite de imágenes",
+                          description: `Solo se procesarán ${maxFiles} imagen(es). Puedes subir un máximo de 10 imágenes.`,
+                          variant: "default",
+                        })
+                      }
+                      
+                      // Procesar cada archivo
+                      filesToProcess.forEach(file => {
+                        manejarArchivo(file)
+                      })
+                      e.target.value = '' // Reset input
+                    }
+                  }}
+                />
+
+                {formulario.imagenes && formulario.imagenes.length > 0 ? (
+                  // Vista de lista cuando hay imágenes cargadas
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-gray-500">
+                        {formulario.imagenes.length} imagen(es) cargada(s) {formulario.imagenes.length < 10 && `(máximo 10)`}
+                      </p>
+                    </div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {formulario.imagenes.map((imagen, index) => (
+                        <div key={index} className="border border-gray-200 rounded-md bg-white p-3">
+                          <div className="flex items-center gap-3">
+                            <div className="relative flex-shrink-0">
+                              <img 
+                                src={imagen} 
+                                alt={`Imagen ${index + 1}`}
+                                className="w-16 h-16 rounded-md object-cover border border-gray-200"
+                                onError={(e) => {
+                                  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect fill="%23f3f4f6" width="64" height="64"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="10"%3EImg%3C/text%3E%3C/svg%3E'
+                                }}
+                              />
+                              <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 shadow-md">
+                                <CheckCircle className="h-2.5 w-2.5" />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-900 truncate">Imagen {index + 1}</p>
+                              <p className="text-xs text-gray-500 truncate">{imagen.substring(0, 50)}...</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nuevasImagenes = formulario.imagenes.filter((_, i) => i !== index)
+                                setFormulario({ ...formulario, imagenes: nuevasImagenes })
+                              }}
+                              className="flex-shrink-0 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
+                              title="Eliminar imagen"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Indicador de carga cuando se están subiendo imágenes */}
+                    {(subiendoImagen || imagenesSubiendo > 0) && (
+                      <div className="border border-blue-200 rounded-md bg-blue-50 p-4 mt-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-blue-900">
+                              {imagenesSubiendo > 1 
+                                ? `Subiendo ${imagenesSubiendo} imágenes...` 
+                                : 'Subiendo imagen...'}
+                            </p>
+                            <p className="text-xs text-blue-700 mt-1">Por favor espera mientras se procesan las imágenes</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-                          <p className="text-sm font-medium text-gray-900 truncate">Imagen cargada</p>
-                        </div>
-                        <p className="text-xs text-gray-500 truncate">{formulario.imagen}</p>
-                        <p className="text-xs text-gray-400 mt-1">Solo se permite una imagen por producto</p>
-                      </div>
+                    )}
+                    
+                    {formulario.imagenes.length < 10 && (
                       <button
                         type="button"
-                        onClick={() => setFormulario({ ...formulario, imagen: "" })}
-                        className="flex-shrink-0 p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                        title="Eliminar imagen"
+                        disabled={subiendoImagen || imagenesSubiendo > 0}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          if (subiendoImagen || imagenesSubiendo > 0) return
+                          console.log("Botón Agregar más imágenes clickeado")
+                          console.log("fileInputRef.current:", fileInputRef.current)
+                          // Usar setTimeout para asegurar que el click se procese correctamente
+                          setTimeout(() => {
+                            if (fileInputRef.current) {
+                              fileInputRef.current.click()
+                            } else {
+                              console.error("fileInputRef.current es null")
+                            }
+                          }, 0)
+                        }}
+                        className={`w-full mt-2 py-2 px-4 text-sm border border-blue-200 rounded-md transition-colors ${
+                          (subiendoImagen || imagenesSubiendo > 0)
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                            : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer'
+                        }`}
                       >
-                        <X className="h-4 w-4" />
+                        {(subiendoImagen || imagenesSubiendo > 0) ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 inline-block mr-1"></div>
+                            Subiendo...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 inline mr-1" />
+                            Agregar más imágenes
+                          </>
+                        )}
                       </button>
-                    </div>
+                    )}
                   </div>
                 ) : (
                   // Área de arrastrar y soltar cuando no hay imagen
@@ -1265,10 +1516,23 @@ export function PaginaProductos() {
                         setIsDragging(false)
                         
                         console.log("Archivo soltado, files:", e.dataTransfer.files)
-                        const files = e.dataTransfer.files
+                        const files = Array.from(e.dataTransfer.files)
                         if (files && files.length > 0) {
-                          console.log("Llamando manejarArchivo con:", files[0])
-                          manejarArchivo(files[0])
+                          const maxFiles = 10 - (formulario.imagenes?.length || 0)
+                          const filesToProcess = files.slice(0, maxFiles)
+                          
+                          if (files.length > maxFiles) {
+                            toast({
+                              title: "Límite de imágenes",
+                              description: `Solo se procesarán ${maxFiles} imagen(es). Puedes subir un máximo de 10 imágenes.`,
+                              variant: "default",
+                            })
+                          }
+                          
+                          // Procesar cada archivo
+                          filesToProcess.forEach(file => {
+                            manejarArchivo(file)
+                          })
                         }
                       }}
                       onClick={() => {
@@ -1279,20 +1543,6 @@ export function PaginaProductos() {
                         }
                       }}
                     >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
-                        className="hidden"
-                    onChange={(e) => {
-                      console.log("Input file onChange disparado, files:", e.target.files)
-                      if (e.target.files && e.target.files.length > 0) {
-                        console.log("Llamando manejarArchivo con archivo seleccionado:", e.target.files[0])
-                        manejarArchivo(e.target.files[0])
-                        e.target.value = '' // Reset input
-                      }
-                    }}
-                      />
                       {subiendoImagen ? (
                         <div className="space-y-3">
                           <div className="w-16 h-16 mx-auto bg-blue-100 rounded-lg flex items-center justify-center">
@@ -1310,23 +1560,33 @@ export function PaginaProductos() {
                               Arrastra y suelta el archivo aquí
                             </p>
                             <p className="text-xs text-gray-500 mt-1">o haz clic para seleccionar</p>
-                            <p className="text-xs text-gray-400 mt-2 font-medium">Formatos permitidos: JPG, PNG, GIF, WEBP, SVG</p>
+                            <p className="text-xs text-gray-400 mt-2 font-medium">
+                              Formatos permitidos: JPG, PNG, GIF, WEBP, SVG (máximo 10 imágenes)
+                            </p>
                           </div>
                         </div>
                       )}
                     </div>
                     <div className="mt-3">
                       <Label htmlFor="imagen-url-sidebar" className="text-xs text-gray-500 mb-1 block">
-                        O ingresa una URL de imagen
+                        O ingresa URLs de imágenes (una por línea)
                       </Label>
-                      <Input
+                      <Textarea
                         id="imagen-url-sidebar"
-                        type="url"
-                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                        value={formulario.imagen}
-                        onChange={(e) => setFormulario({ ...formulario, imagen: e.target.value })}
-                        placeholder="https://ejemplo.com/imagen.jpg"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-xs min-h-[80px]"
+                        placeholder="https://ejemplo.com/imagen1.jpg&#10;https://ejemplo.com/imagen2.jpg"
                         onClick={(e) => e.stopPropagation()}
+                        onBlur={(e) => {
+                          const urls = e.target.value
+                            .split('\n')
+                            .map(url => url.trim())
+                            .filter(url => url && url.startsWith('http'))
+                          if (urls.length > 0) {
+                            const nuevasImagenes = [...(formulario.imagenes || []), ...urls].slice(0, 10)
+                            setFormulario({ ...formulario, imagenes: nuevasImagenes })
+                            e.target.value = ''
+                          }
+                        }}
                       />
                     </div>
                   </>
@@ -1347,8 +1607,17 @@ export function PaginaProductos() {
                     </>
                   ) : (
                     <>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Agregar Producto
+                      {productoEditando ? (
+                        <>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Guardar Cambios
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Agregar Producto
+                        </>
+                      )}
                     </>
                   )}
                 </Button>
@@ -1357,6 +1626,7 @@ export function PaginaProductos() {
                   variant="outline" 
                   onClick={() => {
                     resetearFormulario()
+                    setProductoEditando(null)
                     setMostrarSidebar(false)
                   }}
                   className="border-gray-300 text-gray-700 hover:bg-gray-50 h-11 px-6"
@@ -1369,75 +1639,294 @@ export function PaginaProductos() {
         </div>
       </div>
 
-      {/* Modal Ver Producto */}
-      <Dialog open={mostrarVerProducto} onOpenChange={setMostrarVerProducto}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-900">
-              {productoViendo?.nombre || "Detalles del Producto"}
-            </DialogTitle>
-          </DialogHeader>
-          {productoViendo && (
-            <div className="space-y-6">
-              {productoViendo.imagen && (
-                <div className="w-full h-64 rounded-lg overflow-hidden bg-gray-100">
-                  <img 
-                    src={productoViendo.imagen} 
-                    alt={productoViendo.nombre}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">Nombre</Label>
-                  <p className="text-sm text-gray-900 mt-1">{productoViendo.nombre}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">SKU</Label>
-                  <p className="text-sm text-gray-900 mt-1">{productoViendo.sku || "N/A"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">Precio Base</Label>
-                  <p className="text-sm text-gray-900 mt-1">€{(productoViendo.precioBase || 0).toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">Precio Venta</Label>
-                  <p className="text-sm text-gray-900 mt-1">€{(productoViendo.precioVenta || productoViendo.precioBase || 0).toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">Stock</Label>
-                  <p className="text-sm text-gray-900 mt-1">{productoViendo.stock ?? 0}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">Estado</Label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {productoViendo.activo ? (
-                      <Badge className="bg-green-100 text-green-700">Activo</Badge>
-                    ) : (
-                      <Badge className="bg-orange-100 text-orange-700">Inactivo</Badge>
+      {/* Overlay oscuro cuando el modal Ver Producto está abierto */}
+      {mostrarVerProducto && (
+        <div 
+          className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            margin: 0,
+            padding: 0
+          }}
+          onClick={() => {
+            setMostrarVerProducto(false)
+            setImagenSeleccionada(0)
+            setCantidad(1)
+          }}
+        />
+      )}
+
+      {/* Modal Ver Producto - Diseño tipo e-commerce */}
+      {mostrarVerProducto && productoViendo && (
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+          <div 
+            className="bg-white rounded-lg shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header con botón cerrar */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Detalles del Producto</h2>
+              <button
+                onClick={() => {
+                  setMostrarVerProducto(false)
+                  setImagenSeleccionada(0)
+                  setCantidad(1)
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Contenido principal */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
+                {/* Columna izquierda - Imágenes */}
+                <div className="space-y-4">
+                  {/* Imagen principal */}
+                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center shadow-md">
+                    {(() => {
+                      const imagenes = productoViendo.imagenes || (productoViendo.imagen ? [productoViendo.imagen] : [])
+                      const imagenActual = imagenes[imagenSeleccionada]
+                      return imagenActual ? (
+                        <img 
+                          src={imagenActual} 
+                          alt={productoViendo.nombre}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="h-24 w-24 text-gray-400" />
+                      )
+                    })()}
+                  </div>
+                  
+                  {/* Thumbnails */}
+                  {(() => {
+                    const imagenes = productoViendo.imagenes || (productoViendo.imagen ? [productoViendo.imagen] : [])
+                    return imagenes.length > 1 && (
+                      <div className="flex gap-2 flex-wrap">
+                        {imagenes.map((imagen, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setImagenSeleccionada(index)}
+                            className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                              imagenSeleccionada === index 
+                                ? 'border-blue-600 ring-2 ring-blue-200 scale-105' 
+                                : 'border-gray-200 hover:border-gray-400'
+                            }`}
+                          >
+                            <img 
+                              src={imagen} 
+                              alt={`${productoViendo.nombre} - Imagen ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })()}
+      </div>
+
+                {/* Columna derecha - Información del producto */}
+                <div className="space-y-6">
+                  {/* Nombre del producto con badge destacado */}
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <h1 className="text-3xl font-bold text-gray-900 flex-1">
+                        {productoViendo.nombre}
+                      </h1>
+                      {productoViendo.destacado && (
+                        <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-700 flex items-center gap-1 flex-shrink-0">
+                          <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                          Producto Destacado
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {/* Descripción debajo del título */}
+                    {productoViendo.descripcion && (
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          {productoViendo.descripcion}
+                        </p>
+                      </div>
                     )}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">Categoría</Label>
-                  <p className="text-sm text-gray-900 mt-1">{productoViendo.categoria || "N/A"}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">Subcategoría</Label>
-                  <p className="text-sm text-gray-900 mt-1">{productoViendo.subcategoria || "N/A"}</p>
+                  </div>
+
+                  {/* Rating con botón de favoritos */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star}
+                            className={`h-5 w-5 ${
+                              star <= 4 
+                                ? 'fill-yellow-400 text-yellow-400' 
+                                : 'fill-gray-200 text-gray-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-500">4.5 (2 reseñas)</span>
+                    </div>
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-300 hover:bg-gray-50 p-2"
+                      onClick={() => {
+                        toast({
+                          title: "Agregado a favoritos",
+                          description: `"${productoViendo.nombre}" se agregó a tus favoritos`,
+                        })
+                      }}
+                    >
+                      <Heart className="h-4 w-4 text-gray-600" />
+                    </Button>
+                  </div>
+
+                  {/* Precio destacado - alineado a la derecha */}
+                  <div className="py-4 border-y border-gray-200 flex justify-end">
+                    {productoViendo.precioBase && productoViendo.precioVenta && productoViendo.precioBase > productoViendo.precioVenta ? (
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-xl text-gray-400 line-through">
+                          €{productoViendo.precioBase.toFixed(2)}
+                        </span>
+                        <span className="text-4xl font-bold text-blue-600">
+                          €{productoViendo.precioVenta.toFixed(2)}
+                        </span>
+                        <Badge className="bg-red-100 text-red-700 text-xs px-2 py-1">
+                          {Math.round(((productoViendo.precioBase - productoViendo.precioVenta) / productoViendo.precioBase) * 100)}% OFF
+                        </Badge>
+                      </div>
+                    ) : (
+                      <span className="text-4xl font-bold text-blue-600">
+                        €{(productoViendo.precioVenta || productoViendo.precioBase || 0).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Información de disponibilidad */}
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Disponibilidad:</span>
+                      {(productoViendo.stock || 0) === 0 ? (
+                        <Badge className="bg-red-100 text-red-700 text-xs px-3 py-1">
+                          Sin stock
+                        </Badge>
+                      ) : (productoViendo.stock || 0) <= 5 ? (
+                        <Badge className="bg-orange-100 text-orange-700 text-xs px-3 py-1 flex items-center gap-1">
+                          Pocas unidades
+                          <ChevronDown className="h-3 w-3" />
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-green-100 text-green-700 text-xs px-3 py-1">
+                          En stock
+                        </Badge>
+                      )}
+                    </div>
+                    {(productoViendo.stock || 0) > 0 && (
+                      <p className="text-xs text-gray-500">
+                        {productoViendo.stock} {productoViendo.unidadMedida || 'unidad'}(es) disponible(s)
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Especificaciones simplificadas */}
+                  {(productoViendo.categoria || productoViendo.sku) && (
+                    <div className="space-y-2 pt-2">
+                      <h3 className="text-sm font-semibold text-gray-900">Especificaciones</h3>
+                      <div className="space-y-2">
+                        {productoViendo.categoria && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Categoría:</span>
+                            <span className="text-gray-900 font-medium">{productoViendo.categoria}</span>
+                          </div>
+                        )}
+                        {productoViendo.subcategoria && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Subcategoría:</span>
+                            <span className="text-gray-900 font-medium">{productoViendo.subcategoria}</span>
+                          </div>
+                        )}
+                        {productoViendo.sku && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">SKU:</span>
+                            <span className="text-gray-900 font-mono text-xs">{productoViendo.sku}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tags si existen */}
+                  {productoViendo.tags && productoViendo.tags.length > 0 && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-700 block mb-2">Etiquetas:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {productoViendo.tags.map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Controles de cantidad y acciones */}
+                  <div className="flex items-center justify-between gap-4 pt-4 border-t border-gray-200">
+                    {/* Selector de cantidad */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Cantidad:</span>
+                      <div className="flex items-center border border-gray-300 rounded-md">
+                        <button
+                          type="button"
+                          onClick={() => setCantidad(Math.max(1, cantidad - 1))}
+                          className="p-2 hover:bg-gray-100 transition-colors"
+                          disabled={cantidad <= 1}
+                        >
+                          <Minus className="h-4 w-4 text-gray-600" />
+                        </button>
+                        <span className="px-4 py-2 text-sm font-medium text-gray-900 min-w-[3rem] text-center">
+                          {cantidad}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setCantidad(Math.min(productoViendo.stock || 999, cantidad + 1))}
+                          className="p-2 hover:bg-gray-100 transition-colors"
+                          disabled={cantidad >= (productoViendo.stock || 999)}
+                        >
+                          <Plus className="h-4 w-4 text-gray-600" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Botón de acción - pegado a la derecha */}
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => {
+                        toast({
+                          title: "Producto agregado",
+                          description: `${cantidad} unidad(es) de "${productoViendo.nombre}" agregada(s) al carrito`,
+                        })
+                      }}
+                    >
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Agregar al Carrito
+                    </Button>
+                  </div>
                 </div>
               </div>
-              {productoViendo.descripcion && (
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700">Descripción</Label>
-                  <p className="text-sm text-gray-900 mt-1">{productoViendo.descripcion}</p>
-                </div>
-              )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
 
       {/* Modal Órdenes del Producto */}
       <Dialog open={mostrarOrdenesProducto} onOpenChange={setMostrarOrdenesProducto}>
@@ -1456,7 +1945,7 @@ export function PaginaProductos() {
                 <p className="text-sm text-gray-500 text-center py-8">
                   Funcionalidad en desarrollo. Aquí se mostrarán las órdenes relacionadas con este producto.
                 </p>
-              </div>
+    </div>
             </div>
           )}
         </DialogContent>
@@ -1512,3 +2001,4 @@ export function PaginaProductos() {
     </>
   )
 }
+
