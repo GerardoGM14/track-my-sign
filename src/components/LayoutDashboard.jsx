@@ -8,7 +8,9 @@ import { useNavigate, useLocation } from "react-router-dom"
 export default function LayoutDashboard({ children }) {
   const { usuario, cerrarSesion } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const menuRef = useRef(null)
+  const scrollContainerRef = useRef(null)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -53,6 +55,22 @@ export default function LayoutDashboard({ children }) {
     }
   }, [showUserMenu])
 
+  // Detectar scroll para cambiar el topbar
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) return
+
+    const handleScroll = () => {
+      const scrollTop = scrollContainer.scrollTop
+      setIsScrolled(scrollTop > 20)
+    }
+
+    scrollContainer.addEventListener("scroll", handleScroll)
+    return () => {
+      scrollContainer.removeEventListener("scroll", handleScroll)
+    }
+  }, [])
+
   const handleCerrarSesion = async () => {
     await cerrarSesion()
     navigate("/login")
@@ -63,16 +81,25 @@ export default function LayoutDashboard({ children }) {
       <SidebarTienda />
       <div className="flex-1 flex flex-col overflow-hidden m-6 my-6 ml-4 mr-8">
         {/* Header Superior - Transparente y alineado */}
-        <header className="bg-transparent px-6 py-4 flex items-center justify-between flex-shrink-0 mb-2">
-          {/* Breadcrumb dinámico */}
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span className="text-gray-400">{breadcrumb.categoria}</span>
-            <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
-            <span className="text-gray-900 font-medium">{breadcrumb.titulo}</span>
-          </div>
+        <header className="px-20 py-2 flex items-center justify-between flex-shrink-0 mb-0 bg-transparent">
+          {/* Contenedor con fondo blanco redondeado que aparece al hacer scroll */}
+          <div 
+            className={`flex items-center justify-between w-full px-6 py-3 rounded-xl transition-all duration-300 ${
+              isScrolled 
+                ? "bg-white shadow-sm relative z-50" 
+                : "bg-transparent"
+            }`}
+            style={{ overflow: 'visible' }}
+          >
+            {/* Breadcrumb dinámico */}
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span className="text-gray-400">{breadcrumb.categoria}</span>
+              <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+              <span className="text-gray-900 font-medium">{breadcrumb.titulo}</span>
+            </div>
 
-          {/* Iconos del header */}
-          <div className="flex items-center gap-3">
+            {/* Iconos del header */}
+            <div className="flex items-center gap-3">
             {/* Icono de Mensajes */}
             <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
               <MessageSquare className="h-5 w-5" />
@@ -155,10 +182,11 @@ export default function LayoutDashboard({ children }) {
               )}
             </div>
           </div>
+          </div>
         </header>
 
         {/* Contenido del Dashboard */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden dashboard-scroll">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden dashboard-scroll">
           <div className="flex flex-1 flex-col gap-4 px-8 pb-6 min-h-full">{children}</div>
         </div>
       </div>

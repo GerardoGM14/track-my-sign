@@ -18,7 +18,7 @@ const SelectProvider = ({ children, value, onValueChange, ...props }) => {
 
   return (
     <Select.Provider value={{ open, setOpen, value: selectedValue, onValueChange: handleValueChange }}>
-      <div {...props}>{children}</div>
+      <div className="relative" {...props}>{children}</div>
     </Select.Provider>
   )
 }
@@ -44,12 +44,12 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
 })
 SelectTrigger.displayName = "SelectTrigger"
 
-const SelectValue = ({ placeholder, className, ...props }) => {
+const SelectValue = ({ placeholder, className, children, ...props }) => {
   const context = React.useContext(Select)
 
   return (
     <span className={cn("block truncate", className)} {...props}>
-      {context?.value || placeholder}
+      {children !== undefined ? children : (context?.value || placeholder)}
     </span>
   )
 }
@@ -63,7 +63,7 @@ const SelectContent = React.forwardRef(({ className, children, ...props }, ref) 
     <div
       ref={ref}
       className={cn(
-        "relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-80",
+        "absolute top-full left-0 mt-1 z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-80",
         className,
       )}
       {...props}

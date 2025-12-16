@@ -274,7 +274,7 @@ export function PaginaOrdenes() {
   }
 
   return (
-      <div className="space-y-6 min-h-full">
+      <div className="space-y-6 min-h-full px-18">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -288,110 +288,7 @@ export function PaginaOrdenes() {
             <Plus className="w-4 h-4 mr-2" />
             Nueva Orden
           </Button>
-          
-          <Dialog open={mostrarDialogoOrden} onOpenChange={setMostrarDialogoOrden}>
-            <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Crear Nueva Orden</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Cotización Aprobada</Label>
-                <Select
-                  value={nuevaOrden.cotizacionId}
-                  onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, cotizacionId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar cotización" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cotizaciones.map((cotizacion) => (
-                      <SelectItem key={cotizacion.id} value={cotizacion.id}>
-                        {cotizacion.numero} - {cotizacion.cliente.nombre} (€{cotizacion.totales?.total})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Prioridad</Label>
-                <Select
-                  value={nuevaOrden.prioridad}
-                  onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, prioridad: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {prioridades.map((prioridad) => (
-                      <SelectItem key={prioridad.value} value={prioridad.value}>
-                        {prioridad.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Fecha de Entrega</Label>
-                <Input
-                  type="date"
-                  value={nuevaOrden.fechaEntrega}
-                  onChange={(e) => setNuevaOrden({ ...nuevaOrden, fechaEntrega: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label>Empleado Asignado</Label>
-                <Select
-                  value={nuevaOrden.empleadoAsignado}
-                  onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, empleadoAsignado: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar empleado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {empleados.map((empleado) => (
-                      <SelectItem key={empleado.id} value={empleado.id}>
-                        {empleado.nombre} ({empleado.rol})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Notas</Label>
-                <Textarea
-                  value={nuevaOrden.notas}
-                  onChange={(e) => setNuevaOrden({ ...nuevaOrden, notas: e.target.value })}
-                  placeholder="Notas adicionales para la orden"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button
-                  onClick={crearOrdenDesdeCotizacion}
-                  disabled={cargando || !nuevaOrden.cotizacionId || !nuevaOrden.fechaEntrega}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {cargando ? "Creando..." : "Crear Orden"}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setMostrarDialogoOrden(false)}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+        </div>
 
       {/* Tablero Kanban */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -566,6 +463,109 @@ export function PaginaOrdenes() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={mostrarDialogoOrden} onOpenChange={setMostrarDialogoOrden}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crear Nueva Orden</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Cotización Aprobada</Label>
+              <Select
+                value={nuevaOrden.cotizacionId}
+                onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, cotizacionId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar cotización" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cotizaciones.map((cotizacion) => (
+                    <SelectItem key={cotizacion.id} value={cotizacion.id}>
+                      {cotizacion.numero} - {cotizacion.cliente.nombre} (€{cotizacion.totales?.total})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Prioridad</Label>
+              <Select
+                value={nuevaOrden.prioridad}
+                onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, prioridad: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {prioridades.map((prioridad) => (
+                    <SelectItem key={prioridad.value} value={prioridad.value}>
+                      {prioridad.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Fecha de Entrega</Label>
+              <Input
+                type="date"
+                value={nuevaOrden.fechaEntrega}
+                onChange={(e) => setNuevaOrden({ ...nuevaOrden, fechaEntrega: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <Label>Empleado Asignado</Label>
+              <Select
+                value={nuevaOrden.empleadoAsignado}
+                onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, empleadoAsignado: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar empleado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empleados.map((empleado) => (
+                    <SelectItem key={empleado.id} value={empleado.id}>
+                      {empleado.nombre} ({empleado.rol})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Notas</Label>
+              <Textarea
+                value={nuevaOrden.notas}
+                onChange={(e) => setNuevaOrden({ ...nuevaOrden, notas: e.target.value })}
+                placeholder="Notas adicionales para la orden"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                onClick={crearOrdenDesdeCotizacion}
+                disabled={cargando || !nuevaOrden.cotizacionId || !nuevaOrden.fechaEntrega}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {cargando ? "Creando..." : "Crear Orden"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setMostrarDialogoOrden(false)}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

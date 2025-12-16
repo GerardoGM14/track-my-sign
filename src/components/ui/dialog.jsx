@@ -9,6 +9,11 @@ const Dialog = React.createContext()
 const DialogProvider = ({ children, open, onOpenChange, ...props }) => {
   const [isOpen, setIsOpen] = React.useState(open || false)
 
+  // Sincronizar el estado interno con el prop open
+  React.useEffect(() => {
+    setIsOpen(open || false)
+  }, [open])
+
   const handleOpenChange = (newOpen) => {
     setIsOpen(newOpen)
     onOpenChange?.(newOpen)

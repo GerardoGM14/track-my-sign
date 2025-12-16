@@ -210,7 +210,7 @@ export function PaginaClientes() {
   }
 
   return (
-    <div className="space-y-6 min-h-full">
+    <div className="space-y-6 min-h-full px-18">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -224,114 +224,6 @@ export function PaginaClientes() {
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Cliente
         </Button>
-        
-        <Dialog open={mostrarDialogoCliente} onOpenChange={setMostrarDialogoCliente}>
-          <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{clienteEditando ? "Editar Cliente" : "Agregar Nuevo Cliente"}</DialogTitle>
-          </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="nombre">Nombre Completo</Label>
-                <Input
-                  id="nombre"
-                  value={nuevoCliente.nombre}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, nombre: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={nuevoCliente.email}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="telefono">Teléfono</Label>
-                <Input
-                  id="telefono"
-                  value={nuevoCliente.telefono}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, telefono: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="empresa">Empresa</Label>
-                <Input
-                  id="empresa"
-                  value={nuevoCliente.empresa}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, empresa: e.target.value })}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="direccion">Dirección</Label>
-                <Input
-                  id="direccion"
-                  value={nuevoCliente.direccion}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, direccion: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="ciudad">Ciudad</Label>
-                <Input
-                  id="ciudad"
-                  value={nuevoCliente.ciudad}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, ciudad: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="codigoPostal">Código Postal</Label>
-                <Input
-                  id="codigoPostal"
-                  value={nuevoCliente.codigoPostal}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, codigoPostal: e.target.value })}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="notas">Notas</Label>
-                <Textarea
-                  id="notas"
-                  value={nuevoCliente.notas}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, notas: e.target.value })}
-                  rows={3}
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 mt-4 pt-4">
-              <Button 
-                onClick={guardarCliente} 
-                disabled={cargando || !nuevoCliente.nombre || !nuevoCliente.email}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {cargando ? "Guardando..." : "Guardar Cliente"}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setMostrarDialogoCliente(false)
-                  setClienteEditando(null)
-                  setNuevoCliente({
-                    nombre: "",
-                    email: "",
-                    telefono: "",
-                    empresa: "",
-                    direccion: "",
-                    ciudad: "",
-                    codigoPostal: "",
-                    pais: "",
-                    notas: "",
-                  })
-                }}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                Cancelar
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Lista de clientes */}
@@ -603,6 +495,114 @@ export function PaginaClientes() {
           <p className="text-gray-500">Cargando clientes...</p>
         </div>
       )}
+
+      <Dialog open={mostrarDialogoCliente} onOpenChange={setMostrarDialogoCliente}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{clienteEditando ? "Editar Cliente" : "Agregar Nuevo Cliente"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="nombre">Nombre Completo</Label>
+              <Input
+                id="nombre"
+                value={nuevoCliente.nombre}
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, nombre: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={nuevoCliente.email}
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, email: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="telefono">Teléfono</Label>
+              <Input
+                id="telefono"
+                value={nuevoCliente.telefono}
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, telefono: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="empresa">Empresa</Label>
+              <Input
+                id="empresa"
+                value={nuevoCliente.empresa}
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, empresa: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="direccion">Dirección</Label>
+              <Input
+                id="direccion"
+                value={nuevoCliente.direccion}
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, direccion: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="ciudad">Ciudad</Label>
+              <Input
+                id="ciudad"
+                value={nuevoCliente.ciudad}
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, ciudad: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="codigoPostal">Código Postal</Label>
+              <Input
+                id="codigoPostal"
+                value={nuevoCliente.codigoPostal}
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, codigoPostal: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="notas">Notas</Label>
+              <Textarea
+                id="notas"
+                value={nuevoCliente.notas}
+                onChange={(e) => setNuevoCliente({ ...nuevoCliente, notas: e.target.value })}
+                rows={3}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4 pt-4">
+            <Button 
+              onClick={guardarCliente} 
+              disabled={cargando || !nuevoCliente.nombre || !nuevoCliente.email}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {cargando ? "Guardando..." : "Guardar Cliente"}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setMostrarDialogoCliente(false)
+                setClienteEditando(null)
+                setNuevoCliente({
+                  nombre: "",
+                  email: "",
+                  telefono: "",
+                  empresa: "",
+                  direccion: "",
+                  ciudad: "",
+                  codigoPostal: "",
+                  pais: "",
+                  notas: "",
+                })
+              }}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

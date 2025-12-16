@@ -330,7 +330,7 @@ export function PaginaCotizaciones() {
   }
 
   return (
-    <div className="space-y-6 min-h-full">
+    <div className="space-y-6 min-h-full px-18">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
