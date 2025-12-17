@@ -1,5 +1,6 @@
 "use client"
 import { useLocation, useParams } from "react-router-dom"
+import { useEffect, useRef } from "react"
 import {
   LayoutDashboard,
   Package,
@@ -14,6 +15,7 @@ import {
   BarChart3,
   Shield,
   ChevronRight,
+  Layers,
 } from "lucide-react"
 import { useAuth } from "../contexts/ContextoAuth"
 import { NavLinkViewTransition } from "./NavLinkViewTransition"
@@ -22,6 +24,7 @@ export default function SidebarTienda() {
   const location = useLocation()
   const { slugTienda } = useParams()
   const { usuario } = useAuth()
+  const sidebarScrollRef = useRef(null)
 
   const obtenerElementosMenu = () => {
     const elementosBase = [
@@ -80,6 +83,12 @@ export default function SidebarTienda() {
         roles: ["admin"],
       },
       {
+        titulo: "Maestros",
+        url: `/${slugTienda}/maestros`,
+        icono: Layers,
+        roles: ["admin"],
+      },
+      {
         titulo: "Configuración",
         url: `/${slugTienda}/configuracion`,
         icono: Settings,
@@ -114,17 +123,51 @@ export default function SidebarTienda() {
 
   const elementosMenu = obtenerElementosMenu()
 
-  const elementosPrincipales = elementosMenu.filter((item) =>
-    ["Dashboard", "Productos", "Precios", "Cotizaciones", "Órdenes", "Clientes"].includes(item.titulo),
+  // Dashboard principal
+  const elementosDashboard = elementosMenu.filter((item) =>
+    ["Dashboard"].includes(item.titulo),
   )
 
-  const elementosGestion = elementosMenu.filter((item) =>
-    ["Facturación", "Usuarios", "Configuración"].includes(item.titulo),
+  // Operaciones del día a día
+  const elementosOperaciones = elementosMenu.filter((item) =>
+    ["Productos", "Precios", "Cotizaciones", "Órdenes", "Clientes"].includes(item.titulo),
+  )
+
+  // Administración y configuración
+  const elementosAdministracion = elementosMenu.filter((item) =>
+    ["Facturación", "Usuarios", "Maestros", "Configuración"].includes(item.titulo),
   )
 
   const elementosSuperAdmin = elementosMenu.filter((item) =>
     ["Gestión Tiendas", "Analytics Global", "Administración"].includes(item.titulo),
   )
+
+  // Detectar scroll en el sidebar para mostrar scrollbar
+  useEffect(() => {
+    const sidebarScroll = sidebarScrollRef.current
+    if (!sidebarScroll) return
+
+    let scrollTimeout
+
+    const handleScroll = () => {
+      // Agregar clase "scrolling" cuando se hace scroll
+      sidebarScroll.classList.add("scrolling")
+      
+      // Limpiar timeout anterior
+      clearTimeout(scrollTimeout)
+      
+      // Remover clase "scrolling" después de 1 segundo sin scroll
+      scrollTimeout = setTimeout(() => {
+        sidebarScroll.classList.remove("scrolling")
+      }, 1000)
+    }
+
+    sidebarScroll.addEventListener("scroll", handleScroll)
+    return () => {
+      sidebarScroll.removeEventListener("scroll", handleScroll)
+      clearTimeout(scrollTimeout)
+    }
+  }, [])
 
   return (
     <div className="flex h-[calc(100vh-3rem)] w-64 flex-col bg-[#1A202C] text-white rounded-xl shadow-2xl m-6 my-6 border border-gray-800/50 overflow-hidden">
@@ -140,43 +183,75 @@ export default function SidebarTienda() {
       </div>
 
       {/* Content - Scroll independiente */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sidebar-scroll">
-        {/* DASHBOARDS */}
-        <div className="mb-6">
-          <div className="px-3 mb-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">DASHBOARDS</span>
-          </div>
-          <div className="space-y-1">
-            {elementosPrincipales.map((item) => {
-              const IconoComponente = item.icono
-              const estaActivo = location.pathname === item.url
-
-              return (
-                <NavLinkViewTransition
-                  key={item.titulo}
-                  to={item.url}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors leading-tight ${
-                    estaActivo
-                      ? "bg-[#2D3748] text-white shadow-sm"
-                      : "text-gray-300 hover:bg-gray-800/50 hover:text-white"
-                  }`}
-                >
-                  <IconoComponente className="h-4 w-4" />
-                  <span className="leading-tight">{item.titulo}</span>
-                </NavLinkViewTransition>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* APPLICATIONS */}
-        {elementosGestion.length > 0 && (
+      <div ref={sidebarScrollRef} className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sidebar-scroll">
+        {/* DASHBOARD */}
+        {elementosDashboard.length > 0 && (
           <div className="mb-6">
             <div className="px-3 mb-2">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">APLICACIONES</span>
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">DASHBOARD</span>
             </div>
             <div className="space-y-1">
-              {elementosGestion.map((item) => {
+              {elementosDashboard.map((item) => {
+                const IconoComponente = item.icono
+                const estaActivo = location.pathname === item.url
+
+                return (
+                  <NavLinkViewTransition
+                    key={item.titulo}
+                    to={item.url}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors leading-tight ${
+                      estaActivo
+                        ? "bg-[#2D3748] text-white shadow-sm"
+                        : "text-gray-300 hover:bg-gray-800/50 hover:text-white"
+                    }`}
+                  >
+                    <IconoComponente className="h-4 w-4" />
+                    <span className="leading-tight">{item.titulo}</span>
+                  </NavLinkViewTransition>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* OPERACIONES */}
+        {elementosOperaciones.length > 0 && (
+          <div className="mb-6">
+            <div className="px-3 mb-2">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">OPERACIONES</span>
+            </div>
+            <div className="space-y-1">
+              {elementosOperaciones.map((item) => {
+                const IconoComponente = item.icono
+                const estaActivo = location.pathname === item.url
+
+                return (
+                  <NavLinkViewTransition
+                    key={item.titulo}
+                    to={item.url}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors leading-tight ${
+                      estaActivo
+                        ? "bg-[#2D3748] text-white shadow-sm"
+                        : "text-gray-300 hover:bg-gray-800/50 hover:text-white"
+                    }`}
+                  >
+                    <IconoComponente className="h-4 w-4" />
+                    <span className="leading-tight">{item.titulo}</span>
+                  </NavLinkViewTransition>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ADMINISTRACIÓN */}
+        {elementosAdministracion.length > 0 && (
+          <div className="mb-6">
+            <div className="px-3 mb-2">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">ADMINISTRACIÓN</span>
+            </div>
+            <div className="space-y-1">
+              {elementosAdministracion.map((item) => {
                 const IconoComponente = item.icono
                 const estaActivo = location.pathname === item.url
 

@@ -11,6 +11,7 @@ import { Textarea } from "../components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { FileText, CheckCircle, XCircle, Download, Eye, Clock, MessageSquare, Star, AlertTriangle } from "lucide-react"
+import mountain from "../assets/mountain.svg"
 
 export function PortalCliente() {
   const { usuarioActual } = useContextoAuth()
@@ -195,8 +196,25 @@ export function PortalCliente() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 relative overflow-hidden">
+      {/* Ilustraciones decorativas al fondo con desenfoque y color plomo */}
+      <img
+        src={mountain}
+        alt="Decoración montañosa"
+        className="pointer-events-none select-none fixed bottom-0 right-0 w-[360px] md:w-[500px] opacity-20 blur-sm z-0"
+        style={{
+          filter: 'grayscale(100%) brightness(0.7) contrast(1.2)',
+        }}
+      />
+      <img
+        src={mountain}
+        alt="Decoración montañosa reflejada"
+        className="pointer-events-none select-none fixed bottom-0 left-0 w-[360px] md:w-[500px] opacity-20 blur-sm z-0 transform -scale-x-100"
+        style={{
+          filter: 'grayscale(100%) brightness(0.7) contrast(1.2)',
+        }}
+      />
+      <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Portal del Cliente</h1>
           <p className="text-gray-600 mb-6">Bienvenido, {usuarioActual?.nombre}</p>

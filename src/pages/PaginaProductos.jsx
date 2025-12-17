@@ -13,7 +13,8 @@ import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Badge } from "../components/ui/badge"
-import { Plus, Edit, Trash2, Package, X, Search, MoreVertical, Eye, BarChart3, Grid, ChevronDown, Circle, Tag, DollarSign, Hash, Image as ImageIcon, Layers, CheckCircle, Star, Heart, ShoppingCart, Minus } from "lucide-react"
+import { Plus, Edit, Trash2, Package, X, Search, MoreVertical, Eye, BarChart3, Grid, ChevronDown, Circle, Tag, DollarSign, Hash, Image as ImageIcon, Layers, CheckCircle, Star, Heart, ShoppingCart, Minus, FileText, Users, Calendar, DollarSign as DollarIcon, TrendingUp, Clock, CheckCircle2, PlayCircle, AlertCircle } from "lucide-react"
+import deleteIcon from "../assets/delete.svg"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import { toast } from "../hooks/user-toast"
 
@@ -21,6 +22,9 @@ export function PaginaProductos() {
   const { slugTienda } = useParams()
   const { tiendaActual, establecerTiendaPorSlug, cargando: cargandoTienda } = useContextoTienda()
   const [productos, setProductos] = useState([])
+  const [categorias, setCategorias] = useState([])
+  const [subcategorias, setSubcategorias] = useState([])
+  const [unidadesMedida, setUnidadesMedida] = useState([])
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [productoEditando, setProductoEditando] = useState(null)
   const [cargando, setCargando] = useState(false)
@@ -36,6 +40,10 @@ export function PaginaProductos() {
   const [cantidad, setCantidad] = useState(1)
   const [mostrarOrdenesProducto, setMostrarOrdenesProducto] = useState(false)
   const [productoOrdenes, setProductoOrdenes] = useState(null)
+  const [ordenesDelProducto, setOrdenesDelProducto] = useState([])
+  const [cargandoOrdenes, setCargandoOrdenes] = useState(false)
+  const [busquedaOrdenes, setBusquedaOrdenes] = useState("")
+  const [filtroEstadoOrden, setFiltroEstadoOrden] = useState("all")
   const [mostrarConfirmarEliminar, setMostrarConfirmarEliminar] = useState(false)
   const [productoAEliminar, setProductoAEliminar] = useState(null)
   const [subiendoImagen, setSubiendoImagen] = useState(false)
@@ -64,25 +72,6 @@ export function PaginaProductos() {
     tags: [],
   })
 
-  const categorias = [
-    "Señalética Exterior",
-    "Señalética Interior",
-    "Vinilos Decorativos",
-    "Impresión Digital",
-    "Letras Corpóreas",
-    "Displays y Stands",
-  ]
-
-  const subcategorias = {
-    "Señalética Exterior": ["Tótems", "Vallas", "Banderolas", "Señales de Tráfico"],
-    "Señalética Interior": ["Placas", "Directorios", "Señales de Seguridad", "Wayfinding"],
-    "Vinilos Decorativos": ["Escaparates", "Paredes", "Vehículos", "Suelos"],
-    "Impresión Digital": ["Lonas", "Canvas", "Papel", "Rígidos"],
-    "Letras Corpóreas": ["Acero", "Acrílico", "PVC", "Madera"],
-    "Displays y Stands": ["Roll-ups", "Photocalls", "Expositores", "Ferias"],
-  }
-
-  const unidadesMedida = ["unidad", "m²", "ml", "kg", "horas"]
 
   // Cargar tienda desde la URL si no está cargada
   useEffect(() => {
@@ -94,8 +83,31 @@ export function PaginaProductos() {
   useEffect(() => {
     if (tiendaActual) {
       cargarProductos()
+      cargarMaestros()
     }
   }, [tiendaActual])
+
+  const cargarMaestros = async () => {
+    try {
+      // Cargar categorías
+      const categoriasRef = collection(db, "tiendas", tiendaActual.id, "categorias")
+      const categoriasSnap = await getDocs(categoriasRef)
+      setCategorias(categoriasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+
+      // Cargar subcategorías
+      const subcategoriasRef = collection(db, "tiendas", tiendaActual.id, "subcategorias")
+      const subcategoriasSnap = await getDocs(subcategoriasRef)
+      const subcategoriasData = subcategoriasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      setSubcategorias(subcategoriasData)
+
+      // Cargar unidades de medida
+      const unidadesRef = collection(db, "tiendas", tiendaActual.id, "unidadesMedida")
+      const unidadesSnap = await getDocs(unidadesRef)
+      setUnidadesMedida(unidadesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+    } catch (error) {
+      console.error("Error cargando maestros:", error)
+    }
+  }
 
   // Mostrar sidebar automáticamente cuando no hay productos (solo después de que se haya cargado)
   useEffect(() => {
@@ -380,6 +392,71 @@ export function PaginaProductos() {
     }
   }
 
+  // Cargar órdenes del producto
+  const cargarOrdenesDelProducto = async (producto) => {
+    if (!tiendaActual || !producto) return
+    
+    try {
+      setCargandoOrdenes(true)
+      const ordenesRef = collection(db, "tiendas", tiendaActual.id, "ordenes")
+      const ordenesSnapshot = await getDocs(ordenesRef)
+      
+      // Filtrar órdenes que contengan el producto
+      const ordenesFiltradas = ordenesSnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((orden) => {
+          if (!orden.items || !Array.isArray(orden.items)) return false
+          return orden.items.some((item) => {
+            // Buscar por ID del producto, SKU o nombre
+            return (
+              item.productoId === producto.id ||
+              item.sku === producto.sku ||
+              item.nombre === producto.nombre ||
+              item.productoNombre === producto.nombre
+            )
+          })
+        })
+        .map((orden) => {
+          // Encontrar el item específico del producto en la orden
+          const itemProducto = orden.items.find((item) => {
+            return (
+              item.productoId === producto.id ||
+              item.sku === producto.sku ||
+              item.nombre === producto.nombre ||
+              item.productoNombre === producto.nombre
+            )
+          })
+          return {
+            ...orden,
+            itemProducto,
+            cantidadProducto: itemProducto?.cantidad || 0,
+            subtotalProducto: itemProducto?.subtotal || 0,
+          }
+        })
+      
+      setOrdenesDelProducto(ordenesFiltradas)
+    } catch (error) {
+      console.error("Error cargando órdenes del producto:", error)
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las órdenes del producto.",
+        variant: "destructive",
+      })
+    } finally {
+      setCargandoOrdenes(false)
+    }
+  }
+
+  // Cargar órdenes cuando se abre el modal
+  useEffect(() => {
+    if (mostrarOrdenesProducto && productoOrdenes && tiendaActual) {
+      cargarOrdenesDelProducto(productoOrdenes)
+    }
+  }, [mostrarOrdenesProducto, productoOrdenes, tiendaActual])
+
   const editarProducto = (producto) => {
     setProductoEditando(producto)
     setFormulario({
@@ -623,11 +700,13 @@ export function PaginaProductos() {
                         <SelectValue placeholder="Seleccionar subcategoría" />
                       </SelectTrigger>
                       <SelectContent>
-                        {subcategorias[formulario.categoria]?.map((subcat) => (
-                          <SelectItem key={subcat} value={subcat}>
-                            {subcat}
-                          </SelectItem>
-                        ))}
+                        {subcategorias
+                          .filter(subcat => subcat.categoria === formulario.categoria)
+                          .map((subcat) => (
+                            <SelectItem key={subcat.id} value={subcat.nombre}>
+                              {subcat.nombre}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -689,8 +768,8 @@ export function PaginaProductos() {
                     </SelectTrigger>
                     <SelectContent>
                       {unidadesMedida.map((unidad) => (
-                        <SelectItem key={unidad} value={unidad}>
-                          {unidad}
+                        <SelectItem key={unidad.id || unidad} value={unidad.simbolo || unidad.nombre || unidad}>
+                          {unidad.simbolo || unidad.nombre || unidad}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1137,11 +1216,11 @@ export function PaginaProductos() {
                     <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-[102]">
                       {categorias.map((cat) => (
                         <SelectItem 
-                          key={cat} 
-                          value={cat}
+                          key={cat.id || cat} 
+                          value={cat.nombre || cat}
                           className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5 text-sm"
                         >
-                          {cat}
+                          {cat.nombre || cat}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1928,76 +2007,373 @@ export function PaginaProductos() {
         </div>
       )}
 
-      {/* Modal Órdenes del Producto */}
-      <Dialog open={mostrarOrdenesProducto} onOpenChange={setMostrarOrdenesProducto}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-900">
-              Órdenes del Producto: {productoOrdenes?.nombre}
-            </DialogTitle>
-          </DialogHeader>
-          {productoOrdenes && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Aquí puedes ver todas las órdenes que incluyen este producto y los clientes que lo han comprado.
-              </p>
-              <div className="border border-gray-200 rounded-lg p-4">
-                <p className="text-sm text-gray-500 text-center py-8">
-                  Funcionalidad en desarrollo. Aquí se mostrarán las órdenes relacionadas con este producto.
-                </p>
-    </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Overlay oscuro cuando el modal Órdenes está abierto */}
+      {mostrarOrdenesProducto && (
+        <div 
+          className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            margin: 0,
+            padding: 0
+          }}
+          onClick={() => {
+            setMostrarOrdenesProducto(false)
+            setProductoOrdenes(null)
+            setOrdenesDelProducto([])
+            setBusquedaOrdenes("")
+            setFiltroEstadoOrden("all")
+          }}
+        />
+      )}
 
-      {/* Modal Confirmar Eliminar */}
-      <Dialog open={mostrarConfirmarEliminar} onOpenChange={setMostrarConfirmarEliminar}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-900">
-              ¿Eliminar Producto?
-            </DialogTitle>
-          </DialogHeader>
-          {productoAEliminar && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-700">
-                Estás a punto de eliminar el producto <strong>{productoAEliminar.nombre}</strong>. Esta acción no se puede deshacer.
-              </p>
-              
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-2">
-                <p className="text-sm font-semibold text-yellow-800">Advertencias:</p>
-                <div className="space-y-1 text-sm text-yellow-700">
-                  <p>• Stock actual: <strong>{productoAEliminar.stock ?? 0} unidades</strong></p>
-                  <p>• Estado: <strong>{productoAEliminar.activo ? "Activo" : "Inactivo"}</strong></p>
-                  {productoAEliminar.stock > 0 && (
-                    <p className="text-red-600 font-semibold">⚠️ Este producto tiene stock disponible. Al eliminarlo, se perderá esta información.</p>
+      {/* Modal Órdenes del Producto - Diseño mejorado */}
+      {mostrarOrdenesProducto && productoOrdenes && (
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Órdenes del Producto
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {productoOrdenes.nombre}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setMostrarOrdenesProducto(false)
+                  setProductoOrdenes(null)
+                  setOrdenesDelProducto([])
+                  setBusquedaOrdenes("")
+                  setFiltroEstadoOrden("all")
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Contenido */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {cargandoOrdenes ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-3 text-gray-600">Cargando órdenes...</span>
+                </div>
+              ) : (
+                <>
+                  {/* Estadísticas */}
+                  {ordenesDelProducto.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <Card className="border border-gray-200 rounded-lg">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-gray-600 mb-1">Total Órdenes</p>
+                              <p className="text-2xl font-bold text-gray-900">{ordenesDelProducto.length}</p>
+                            </div>
+                            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                              <FileText className="h-5 w-5 text-blue-600" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="border border-gray-200 rounded-lg">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-gray-600 mb-1">Cantidad Vendida</p>
+                              <p className="text-2xl font-bold text-gray-900">
+                                {ordenesDelProducto.reduce((sum, orden) => sum + (orden.cantidadProducto || 0), 0)}
+                              </p>
+                            </div>
+                            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                              <Package className="h-5 w-5 text-green-600" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="border border-gray-200 rounded-lg">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-gray-600 mb-1">Total Vendido</p>
+                              <p className="text-2xl font-bold text-gray-900">
+                                €{ordenesDelProducto.reduce((sum, orden) => sum + (orden.subtotalProducto || 0), 0).toFixed(2)}
+                              </p>
+                            </div>
+                            <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                              <DollarIcon className="h-5 w-5 text-purple-600" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="border border-gray-200 rounded-lg">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs text-gray-600 mb-1">Clientes Únicos</p>
+                              <p className="text-2xl font-bold text-gray-900">
+                                {new Set(ordenesDelProducto.map(o => o.cliente?.email || o.cliente?.nombre || 'N/A')).size}
+                              </p>
+                            </div>
+                            <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
+                              <Users className="h-5 w-5 text-orange-600" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   )}
+
+                  {/* Filtros y búsqueda */}
+                  {ordenesDelProducto.length > 0 && (
+                    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input
+                            placeholder="Buscar por cliente, número de orden..."
+                            value={busquedaOrdenes}
+                            onChange={(e) => setBusquedaOrdenes(e.target.value)}
+                            className="pl-10 border-gray-300"
+                          />
+                        </div>
+                      </div>
+                      <Select value={filtroEstadoOrden} onValueChange={setFiltroEstadoOrden}>
+                        <SelectTrigger className="w-full sm:w-48 border-gray-300">
+                          <SelectValue placeholder="Filtrar por estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos los estados</SelectItem>
+                          <SelectItem value="pendiente">Pendiente</SelectItem>
+                          <SelectItem value="en_progreso">En Progreso</SelectItem>
+                          <SelectItem value="revision">En Revisión</SelectItem>
+                          <SelectItem value="completado">Completado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Lista de órdenes */}
+                  {ordenesDelProducto.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FileText className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <p className="text-lg font-semibold text-gray-900 mb-2">No hay órdenes registradas</p>
+                      <p className="text-sm text-gray-500">
+                        Este producto aún no ha sido incluido en ninguna orden.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {ordenesDelProducto
+                        .filter((orden) => {
+                          const matchBusqueda = !busquedaOrdenes || 
+                            orden.numero?.toLowerCase().includes(busquedaOrdenes.toLowerCase()) ||
+                            orden.cliente?.nombre?.toLowerCase().includes(busquedaOrdenes.toLowerCase()) ||
+                            orden.cliente?.email?.toLowerCase().includes(busquedaOrdenes.toLowerCase())
+                          const matchEstado = filtroEstadoOrden === "all" || orden.estado === filtroEstadoOrden
+                          return matchBusqueda && matchEstado
+                        })
+                        .map((orden) => {
+                          const obtenerColorEstado = (estado) => {
+                            const colores = {
+                              pendiente: "bg-gray-100 text-gray-800",
+                              en_progreso: "bg-blue-100 text-blue-800",
+                              revision: "bg-yellow-100 text-yellow-800",
+                              completado: "bg-green-100 text-green-800",
+                            }
+                            return colores[estado] || "bg-gray-100 text-gray-800"
+                          }
+
+                          const obtenerIconoEstado = (estado) => {
+                            const iconos = {
+                              pendiente: Clock,
+                              en_progreso: PlayCircle,
+                              revision: AlertCircle,
+                              completado: CheckCircle2,
+                            }
+                            return iconos[estado] || Clock
+                          }
+
+                          const IconoEstado = obtenerIconoEstado(orden.estado)
+                          const fechaCreacion = orden.fechaCreacion?.toDate ? orden.fechaCreacion.toDate() : (orden.fechaCreacion ? new Date(orden.fechaCreacion) : null)
+
+                          return (
+                            <Card key={orden.id} className="border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <h3 className="font-semibold text-gray-900">{orden.numero || `Orden ${orden.id.substring(0, 8)}`}</h3>
+                                      <Badge className={obtenerColorEstado(orden.estado)}>
+                                        <IconoEstado className="h-3 w-3 mr-1" />
+                                        {orden.estado?.replace('_', ' ') || 'Sin estado'}
+                                      </Badge>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <Users className="h-4 w-4 text-gray-400" />
+                                        <span className="text-gray-600">Cliente:</span>
+                                        <span className="font-medium text-gray-900">
+                                          {orden.cliente?.nombre || orden.cliente?.email || 'N/A'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <Package className="h-4 w-4 text-gray-400" />
+                                        <span className="text-gray-600">Cantidad:</span>
+                                        <span className="font-medium text-gray-900">{orden.cantidadProducto || 0}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <DollarIcon className="h-4 w-4 text-gray-400" />
+                                        <span className="text-gray-600">Subtotal:</span>
+                                        <span className="font-medium text-gray-900">€{(orden.subtotalProducto || 0).toFixed(2)}</span>
+                                      </div>
+                                      {fechaCreacion && (
+                                        <div className="flex items-center gap-2 text-sm">
+                                          <Calendar className="h-4 w-4 text-gray-400" />
+                                          <span className="text-gray-600">Fecha:</span>
+                                          <span className="font-medium text-gray-900">
+                                            {fechaCreacion.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay oscuro cuando el modal Eliminar está abierto */}
+      {mostrarConfirmarEliminar && (
+        <div 
+          className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            margin: 0,
+            padding: 0
+          }}
+          onClick={() => {
+            setMostrarConfirmarEliminar(false)
+            setProductoAEliminar(null)
+          }}
+        />
+      )}
+
+      {/* Modal Confirmar Eliminar - Estilo similar a Ver Producto */}
+      {mostrarConfirmarEliminar && productoAEliminar && (
+        <div className="fixed inset-0 z-[101] flex items-center justify-center p-4">
+          <div 
+            className="bg-white rounded-lg shadow-2xl max-w-md w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-8">
+              {/* Icono principal - delete.svg grande y centrado */}
+              <div className="flex justify-center mb-6">
+                <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center">
+                  <img 
+                    src={deleteIcon} 
+                    alt="Eliminar" 
+                    className="w-16 h-16"
+                    style={{
+                      filter: 'brightness(0) saturate(100%) invert(27%) sepia(95%) saturate(7492%) hue-rotate(355deg) brightness(96%) contrast(118%)'
+                    }}
+                  />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              {/* Título */}
+              <div className="text-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  ¿Eliminar Producto?
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Esta acción eliminará el producto <strong className="text-gray-900">"{productoAEliminar.nombre}"</strong>. ¿Seguro de continuar?
+                </p>
+              </div>
+
+              {/* Advertencias - estilo similar a Ver Producto */}
+              {(productoAEliminar.stock > 0 || !productoAEliminar.activo) && (
+                <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
+                  <div className="flex items-center justify-between">
+                    {productoAEliminar.stock > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">Stock actual:</span>
+                        <Badge className="bg-orange-100 text-orange-700 text-xs px-3 py-1">
+                          {productoAEliminar.stock} unidades
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">Estado:</span>
+                      <Badge className={`text-xs px-3 py-1 ${
+                        productoAEliminar.activo 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-orange-100 text-orange-700'
+                      }`}>
+                        {productoAEliminar.activo ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Botones - estilo similar a Ver Producto */}
+              <div className="flex gap-3">
                 <Button
                   onClick={() => {
                     setMostrarConfirmarEliminar(false)
                     setProductoAEliminar(null)
                   }}
                   variant="outline"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 bg-white h-11"
                 >
                   Cancelar
                 </Button>
                 <Button
                   onClick={confirmarEliminarProducto}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white h-11 font-medium shadow-sm"
                 >
-                  Eliminar Producto
+                  Eliminar
                 </Button>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </>
   )
 }

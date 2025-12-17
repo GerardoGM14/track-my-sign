@@ -6,19 +6,67 @@ import { cn } from "../../lib/utils"
 
 const Select = React.createContext()
 
+// Variable global para rastrear qué select está abierto
+let openSelectRef = null
+
 const SelectProvider = ({ children, value, onValueChange, ...props }) => {
   const [open, setOpen] = React.useState(false)
   const [selectedValue, setSelectedValue] = React.useState(value || "")
+  const containerRef = React.useRef(null)
+  const setOpenRef = React.useRef(null)
+
+  React.useEffect(() => {
+    setSelectedValue(value || "")
+  }, [value])
+
+  React.useEffect(() => {
+    setOpenRef.current = setOpen
+  }, [])
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (open && containerRef.current && !containerRef.current.contains(event.target)) {
+        setOpen(false)
+        if (openSelectRef === setOpenRef) {
+          openSelectRef = null
+        }
+      }
+    }
+
+    if (open) {
+      // Cerrar otros selects abiertos
+      if (openSelectRef && openSelectRef !== setOpenRef && openSelectRef.current) {
+        openSelectRef.current(false)
+      }
+      openSelectRef = setOpenRef
+      document.addEventListener('mousedown', handleClickOutside)
+    } else {
+      if (openSelectRef === setOpenRef) {
+        openSelectRef = null
+      }
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [open])
+
+  const handleOpenChange = (newOpen) => {
+    setOpen(newOpen)
+  }
 
   const handleValueChange = (newValue) => {
     setSelectedValue(newValue)
     onValueChange?.(newValue)
     setOpen(false)
+    if (openSelectRef === setOpenRef) {
+      openSelectRef = null
+    }
   }
 
   return (
-    <Select.Provider value={{ open, setOpen, value: selectedValue, onValueChange: handleValueChange }}>
-      <div className="relative" {...props}>{children}</div>
+    <Select.Provider value={{ open, setOpen: handleOpenChange, value: selectedValue, onValueChange: handleValueChange }}>
+      <div className="relative" ref={containerRef} {...props}>{children}</div>
     </Select.Provider>
   )
 }
@@ -31,14 +79,14 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
       ref={ref}
       type="button"
       className={cn(
-        "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
         className,
       )}
       onClick={() => context?.setOpen(!context.open)}
       {...props}
     >
       {children}
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <ChevronDown className="h-4 w-4 text-gray-400" />
     </button>
   )
 })
@@ -63,7 +111,7 @@ const SelectContent = React.forwardRef(({ className, children, ...props }, ref) 
     <div
       ref={ref}
       className={cn(
-        "absolute top-full left-0 mt-1 z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-80",
+        "absolute top-full left-0 mt-1 z-50 min-w-[8rem] overflow-hidden rounded-md border border-gray-200 bg-white text-gray-900 shadow-lg",
         className,
       )}
       {...props}
@@ -81,15 +129,12 @@ const SelectItem = React.forwardRef(({ className, children, value, ...props }, r
     <div
       ref={ref}
       className={cn(
-        "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex w-full cursor-pointer select-none items-center rounded-sm py-2.5 px-3 text-sm outline-none hover:bg-gray-50 focus:bg-gray-50 transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
       )}
       onClick={() => context?.onValueChange(value)}
       {...props}
     >
-      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-        {context?.value === value && <Check className="h-4 w-4" />}
-      </span>
       {children}
     </div>
   )

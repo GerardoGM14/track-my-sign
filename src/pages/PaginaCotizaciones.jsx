@@ -136,6 +136,12 @@ export function PaginaCotizaciones() {
           if (regla.condicion === "mayor_que" && superficie > regla.valor1) aplicarRegla = true
           if (regla.condicion === "menor_que" && superficie < regla.valor1) aplicarRegla = true
           break
+        case "material":
+          if (regla.condicion === "igual_a" && item.material === regla.valor1) aplicarRegla = true
+          break
+        case "acabado":
+          if (regla.condicion === "igual_a" && item.acabado === regla.valor1) aplicarRegla = true
+          break
       }
 
       if (aplicarRegla) {

@@ -25,7 +25,7 @@ body {
 }
 
 /* Estilos para scrollbars personalizadas */
-/* Sidebar scrollbar */
+/* Sidebar scrollbar - oculto por defecto, visible al hacer scroll o hover */
 .sidebar-scroll::-webkit-scrollbar {
   width: 6px;
 }
@@ -35,28 +35,127 @@ body {
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: #4B5563;
+  background: transparent;
   border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar-thumb,
+.sidebar-scroll.scrolling::-webkit-scrollbar-thumb {
+  background: #4B5563;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
   background: #6B7280;
 }
 
-/* Dashboard scrollbar */
+/* Dashboard scrollbar - oculto por defecto, visible al hacer scroll o hover */
 .dashboard-scroll::-webkit-scrollbar {
   width: 8px;
 }
 
 .dashboard-scroll::-webkit-scrollbar-track {
-  background: #f3f4f6;
+  background: transparent;
 }
 
 .dashboard-scroll::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: transparent;
   border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.dashboard-scroll:hover::-webkit-scrollbar-thumb,
+.dashboard-scroll.scrolling::-webkit-scrollbar-thumb {
+  background: #d1d5db;
 }
 
 .dashboard-scroll::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
+}
+
+/* Scrollbar global para Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.dashboard-scroll:hover,
+.dashboard-scroll.scrolling {
+  scrollbar-color: #d1d5db transparent;
+}
+
+.sidebar-scroll:hover,
+.sidebar-scroll.scrolling {
+  scrollbar-color: #4B5563 transparent;
+}
+
+/* Scrollbar global para body/html - oculto por defecto, visible al hacer scroll o hover */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 8px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+html:hover::-webkit-scrollbar-thumb,
+body:hover::-webkit-scrollbar-thumb,
+html.scrolling::-webkit-scrollbar-thumb,
+body.scrolling::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Agregar clase scrolling al body cuando se hace scroll */
+html.scrolling,
+body.scrolling {
+  scrollbar-color: #d1d5db transparent;
+}
+
+/* Eliminar outline de elementos de tabla al hacer clic */
+th,
+th *,
+th:focus,
+th:active,
+th:focus-within,
+table button,
+table button:focus,
+table button:active {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Prevenir selección de texto en headers de tabla */
+th {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Eliminar outline de botones en general al hacer clic */
+button:focus:not(:focus-visible),
+button:active:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Mantener outline solo para navegación con teclado (accesibilidad) */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }

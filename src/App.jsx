@@ -18,6 +18,7 @@ import { PaginaNoEncontrada } from "./pages/PaginaNoEncontrada"
 import { PaginaFacturacion } from "./pages/PaginaFacturacion"
 import PaginaUsuarios from "./pages/PaginaUsuarios"
 import PaginaConfiguracion from "./pages/PaginaConfiguracion"
+import PaginaMaestros from "./pages/PaginaMaestros"
 import { RutaDashboard } from "./components/RutaDashboard"
 import LayoutDashboard from "./components/LayoutDashboard"
 
@@ -110,6 +111,16 @@ function App() {
                   <RutaProtegida>
                     <LayoutDashboard>
                       <PaginaUsuarios />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/:slugTienda/maestros"
+                element={
+                  <RutaProtegida>
+                    <LayoutDashboard>
+                      <PaginaMaestros />
                     </LayoutDashboard>
                   </RutaProtegida>
                 }

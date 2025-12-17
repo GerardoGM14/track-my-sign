@@ -29,7 +29,9 @@ export function Layout({ children }) {
     location.pathname.includes("/ordenes") ||
     location.pathname.includes("/clientes") ||
     location.pathname.includes("/facturacion") ||
-    location.pathname.includes("/usuarios")
+    location.pathname.includes("/usuarios") ||
+    location.pathname.includes("/configuracion") ||
+    location.pathname.includes("/maestros")
   
   // No mostrar header si no hay usuario y no es una página pública conocida (probablemente 404)
   const mostrarHeader = !esPaginaPublica && !esPaginaTienda && usuarioActual

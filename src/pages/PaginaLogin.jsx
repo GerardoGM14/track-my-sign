@@ -146,13 +146,19 @@ export function PaginaLogin() {
       <img
         src={mountain}
         alt="Decoración montañosa"
-        className="pointer-events-none select-none fixed bottom-0 right-0 w-[360px] md:w-[500px] opacity-100 blur-[0px] z-0"
+        className="pointer-events-none select-none fixed bottom-0 right-0 w-[360px] md:w-[500px] opacity-20 blur-sm z-0"
+        style={{
+          filter: 'grayscale(100%) brightness(0.7) contrast(1.2)',
+        }}
       />
       {/* Ilustración decorativa inferior izquierda en simetría */}
       <img
         src={mountain}
         alt="Decoración montañosa reflejada"
-        className="pointer-events-none select-none fixed bottom-0 left-0 w-[360px] md:w-[500px] opacity-100 blur-[0px] z-0 transform -scale-x-100"
+        className="pointer-events-none select-none fixed bottom-0 left-0 w-[360px] md:w-[500px] opacity-20 blur-sm z-0 transform -scale-x-100"
+        style={{
+          filter: 'grayscale(100%) brightness(0.7) contrast(1.2)',
+        }}
       />
       <div
         className="absolute inset-0 bg-cover bg-center opacity-30"

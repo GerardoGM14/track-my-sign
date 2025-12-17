@@ -4,6 +4,7 @@ import { MessageSquare, Bell, Globe, User, Settings, Activity, LogOut, ChevronDo
 import { useAuth } from "../contexts/ContextoAuth"
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
+import mountain from "../assets/mountain.svg"
 
 export default function LayoutDashboard({ children }) {
   const { usuario, cerrarSesion } = useAuth()
@@ -55,19 +56,33 @@ export default function LayoutDashboard({ children }) {
     }
   }, [showUserMenu])
 
-  // Detectar scroll para cambiar el topbar
+  // Detectar scroll para cambiar el topbar y mostrar scrollbar
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current
     if (!scrollContainer) return
 
+    let scrollTimeout
+
     const handleScroll = () => {
       const scrollTop = scrollContainer.scrollTop
       setIsScrolled(scrollTop > 20)
+      
+      // Agregar clase "scrolling" cuando se hace scroll
+      scrollContainer.classList.add("scrolling")
+      
+      // Limpiar timeout anterior
+      clearTimeout(scrollTimeout)
+      
+      // Remover clase "scrolling" después de 1 segundo sin scroll
+      scrollTimeout = setTimeout(() => {
+        scrollContainer.classList.remove("scrolling")
+      }, 1000)
     }
 
     scrollContainer.addEventListener("scroll", handleScroll)
     return () => {
       scrollContainer.removeEventListener("scroll", handleScroll)
+      clearTimeout(scrollTimeout)
     }
   }, [])
 
@@ -77,9 +92,26 @@ export default function LayoutDashboard({ children }) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-orange-50 overflow-hidden relative">
+      {/* Ilustraciones decorativas al fondo con desenfoque y color plomo */}
+      <img
+        src={mountain}
+        alt="Decoración montañosa"
+        className="pointer-events-none select-none fixed bottom-0 right-0 w-[360px] md:w-[500px] opacity-20 blur-sm z-0"
+        style={{
+          filter: 'grayscale(100%) brightness(0.7) contrast(1.2)',
+        }}
+      />
+      <img
+        src={mountain}
+        alt="Decoración montañosa reflejada"
+        className="pointer-events-none select-none fixed bottom-0 left-0 w-[360px] md:w-[500px] opacity-20 blur-sm z-0 transform -scale-x-100"
+        style={{
+          filter: 'grayscale(100%) brightness(0.7) contrast(1.2)',
+        }}
+      />
       <SidebarTienda />
-      <div className="flex-1 flex flex-col overflow-hidden m-6 my-6 ml-4 mr-8">
+      <div className="flex-1 flex flex-col overflow-hidden m-6 my-6 ml-4 mr-8 relative z-10">
         {/* Header Superior - Transparente y alineado */}
         <header className="px-20 py-2 flex items-center justify-between flex-shrink-0 mb-0 bg-transparent">
           {/* Contenedor con fondo blanco redondeado que aparece al hacer scroll */}
