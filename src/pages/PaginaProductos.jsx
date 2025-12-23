@@ -17,6 +17,7 @@ import { Plus, Edit, Trash2, Package, X, Search, MoreVertical, Eye, BarChart3, G
 import deleteIcon from "../assets/delete.svg"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import { toast } from "../hooks/user-toast"
+import { LoadingSpinner } from "../components/ui/loading-spinner"
 
 export function PaginaProductos() {
   const { slugTienda } = useParams()
@@ -842,39 +843,40 @@ export function PaginaProductos() {
       </Dialog>
 
       {/* Tabla de Productos */}
-      <Card className={`border border-gray-200 rounded-xl shadow-md bg-white flex flex-col overflow-visible ${productosFiltrados.length > 0 ? 'flex-1' : 'flex-none'}`}>
+      <Card className={`border border-gray-200 rounded-2xl shadow-md bg-white flex flex-col overflow-hidden ${productosFiltrados.length > 0 ? 'flex-1' : 'flex-none'}`}>
         <CardContent className={`p-0 flex flex-col overflow-visible ${productosFiltrados.length > 0 ? 'flex-1' : 'flex-none'}`}>
-          <div className={`overflow-x-auto ${productosFiltrados.length > 0 ? 'overflow-y-auto flex-1 overflow-x-visible' : 'overflow-y-visible'}`}>
+          <div className={`overflow-x-auto ${productosFiltrados.length > 0 ? 'overflow-y-auto flex-1' : 'overflow-y-visible'}`}>
+            <div className="min-w-[640px]">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="px-4 py-3 text-left">
-                    <input type="checkbox" className="rounded border-gray-300" />
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left first:pl-4 last:pr-4">
+                      <input type="checkbox" className="rounded-md border-gray-300" />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-600 tracking-wider hidden sm:table-cell">
                     SKU
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
                     Precio
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-600 tracking-wider hidden md:table-cell">
                     Stock
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-600 tracking-wider hidden lg:table-cell">
                     Categoría
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">
                     Estado
                   </th>
-                  <th className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button className="p-1 hover:bg-gray-100 rounded transition-colors">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                      <div className="flex items-center justify-end gap-1 sm:gap-2">
+                        <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors hidden sm:flex">
                         <Grid className="h-4 w-4 text-gray-600" />
                       </button>
-                      <button className="p-1 hover:bg-gray-100 rounded transition-colors">
+                        <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                         <MoreVertical className="h-4 w-4 text-gray-600" />
                       </button>
                     </div>
@@ -884,72 +886,75 @@ export function PaginaProductos() {
               <tbody className="bg-white divide-y divide-gray-100">
                 {productosFiltrados.map((producto) => (
                   <tr key={producto.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4">
-                      <input type="checkbox" className="rounded border-gray-300" />
+                      <td className="px-2 sm:px-4 py-3 sm:py-4 first:pl-4 last:pr-4">
+                        <input type="checkbox" className="rounded-md border-gray-300" />
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
+                      <td className="px-2 sm:px-4 py-3 sm:py-4">
+                        <div className="flex items-center gap-2 sm:gap-3">
                         {producto.imagen ? (
                           <img 
                             src={producto.imagen} 
                             alt={producto.nombre}
-                            className="w-10 h-10 rounded-lg object-cover"
+                              className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover flex-shrink-0"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                            <Package className="h-5 w-5 text-blue-600" />
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                           </div>
                         )}
-                        <span className="text-sm font-medium text-gray-900">{producto.nombre}</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs sm:text-sm font-medium text-gray-900 block truncate">{producto.nombre}</span>
+                            <span className="text-[10px] sm:text-xs text-gray-500 sm:hidden">{producto.sku || "N/A"}</span>
+                          </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm text-gray-700">{producto.sku || "N/A"}</span>
+                      <td className="px-2 sm:px-4 py-3 sm:py-4 hidden sm:table-cell">
+                        <span className="text-xs sm:text-sm text-gray-700">{producto.sku || "N/A"}</span>
                     </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm font-medium text-gray-900">
+                      <td className="px-2 sm:px-4 py-3 sm:py-4">
+                        <span className="text-xs sm:text-sm font-medium text-gray-900">
                         €{(producto.precioVenta || producto.precioBase || 0).toFixed(2)}
                       </span>
                     </td>
-                    <td className="px-4 py-4">
-                      <span className="text-sm text-gray-700">{producto.stock ?? 0}</span>
+                      <td className="px-2 sm:px-4 py-3 sm:py-4 hidden md:table-cell">
+                        <span className="text-xs sm:text-sm text-gray-700">{producto.stock ?? 0}</span>
                     </td>
-                    <td className="px-4 py-4">
-                      <div className="flex flex-wrap gap-1">
+                      <td className="px-2 sm:px-4 py-3 sm:py-4 hidden lg:table-cell">
+                        <div className="flex flex-wrap gap-1.5">
                         {producto.categoria && (
-                          <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                            <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700 rounded-lg px-2 py-0.5">
                             {producto.categoria}
                           </Badge>
                         )}
                         {producto.subcategoria && (
-                          <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700">
+                            <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-700 rounded-lg px-2 py-0.5">
                             {producto.subcategoria}
                           </Badge>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                      <td className="px-2 sm:px-4 py-3 sm:py-4">
                       <div className="flex flex-col items-start gap-1.5">
                         {producto.activo ? (
-                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 flex items-center gap-1">
+                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 flex items-center gap-1 rounded-lg px-2 py-0.5">
                             <Circle className="h-2 w-2 fill-green-500 text-green-500" />
                             Activo
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 flex items-center gap-1">
+                          <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700 flex items-center gap-1 rounded-lg px-2 py-0.5">
                             <Circle className="h-2 w-2 fill-orange-500 text-orange-500" />
                             Inactivo
                           </Badge>
                         )}
                         {producto.destacado && (
-                          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-700 flex items-center gap-1">
+                          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-700 flex items-center gap-1 rounded-lg px-2 py-0.5">
                             <Star className="h-2 w-2 fill-yellow-500 text-yellow-500" />
                             Destacado
                           </Badge>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-2 sm:px-4 py-3 sm:py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={async () => {
@@ -979,7 +984,7 @@ export function PaginaProductos() {
                               })
                             }
                           }}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                         >
                           <Star 
                             className={`h-4 w-4 ${
@@ -1002,14 +1007,14 @@ export function PaginaProductos() {
                               }
                               setMenuAbierto(menuAbierto === producto.id ? null : producto.id)
                             }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors"
+                            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                           >
                             <MoreVertical className="h-4 w-4 text-gray-600" />
                           </button>
                           {menuAbierto === producto.id && (
                             <div 
                               data-menu-id={producto.id}
-                              className="fixed w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999]" 
+                              className="fixed w-48 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-[9999]" 
                               style={{
                                 top: `${menuPosicion.top}px`,
                                 right: `${menuPosicion.right}px`
@@ -1077,6 +1082,7 @@ export function PaginaProductos() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1109,12 +1115,7 @@ export function PaginaProductos() {
       )}
 
       {cargando && productos.length === 0 && (
-        <div className="text-center py-12">
-          <div className="flex items-center justify-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <p className="text-gray-500">Cargando productos...</p>
-          </div>
-        </div>
+        <LoadingSpinner texto="Cargando productos..." />
       )}
     </div>
 
@@ -2071,10 +2072,7 @@ export function PaginaProductos() {
             {/* Contenido */}
             <div className="flex-1 overflow-y-auto p-6">
               {cargandoOrdenes ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <span className="ml-3 text-gray-600">Cargando órdenes...</span>
-                </div>
+                <LoadingSpinner texto="Cargando órdenes..." />
               ) : (
                 <>
                   {/* Estadísticas */}

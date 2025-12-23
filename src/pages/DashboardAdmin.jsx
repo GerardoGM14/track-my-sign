@@ -24,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
+import { LoadingSpinner } from "../components/ui/loading-spinner"
 
 export default function DashboardAdmin() {
   const { slugTienda } = useParams()
@@ -817,9 +818,7 @@ export default function DashboardAdmin() {
           </CardHeader>
           <CardContent>
             {cargandoProductos ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-gray-500">Cargando productos...</p>
-              </div>
+              <LoadingSpinner texto="Cargando productos..." tamaño="sm" />
             ) : topProductos.length > 0 ? (
               <div className="space-y-4">
                 {topProductos.map((producto, i) => (

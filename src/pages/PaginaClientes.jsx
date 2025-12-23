@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Plus, User, Users, Mail, Phone, Building, MapPin, Eye, FileText, Clock, Edit, Trash2 } from "lucide-react"
 import { toast } from "../hooks/user-toast"
+import { LoadingSpinner } from "../components/ui/loading-spinner"
 
 
 export function PaginaClientes() {
@@ -210,16 +211,16 @@ export function PaginaClientes() {
   }
 
   return (
-    <div className="space-y-6 min-h-full px-18">
+    <div className="space-y-4 sm:space-y-6 min-h-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Gestión de Clientes</h1>
-          <p className="text-sm text-gray-600 mt-1 leading-tight">Administra tu base de datos de clientes</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Gestión de Clientes</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-tight">Administra tu base de datos de clientes</p>
         </div>
         <Button 
           onClick={() => setMostrarDialogoCliente(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
         >
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Cliente
@@ -491,9 +492,7 @@ export function PaginaClientes() {
       )}
 
       {cargando && clientes.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Cargando clientes...</p>
-        </div>
+        <LoadingSpinner texto="Cargando clientes..." />
       )}
 
       <Dialog open={mostrarDialogoCliente} onOpenChange={setMostrarDialogoCliente}>

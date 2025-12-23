@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import { Plus, Trash2, FileText, Send, Edit, CheckCircle, XCircle, Clock, DollarSign } from "lucide-react"
+import { LoadingSpinner } from "../components/ui/loading-spinner"
 
 export function PaginaCotizaciones() {
   const { tiendaActual } = useContextoTienda()
@@ -776,9 +777,7 @@ export function PaginaCotizaciones() {
       )}
 
       {cargando && cotizaciones.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Cargando cotizaciones...</p>
-        </div>
+        <LoadingSpinner texto="Cargando cotizaciones..." />
       )}
     </div>
   )

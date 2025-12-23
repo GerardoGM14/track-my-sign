@@ -37,6 +37,7 @@ import {
   Receipt,
 } from "lucide-react"
 import { toast } from "../hooks/user-toast"
+import { LoadingSpinner } from "../components/ui/loading-spinner"
 
 export function PaginaFacturacion() {
   const { usuarioActual } = useContextoAuth()
@@ -301,11 +302,7 @@ export function PaginaFacturacion() {
   }
 
   if (cargando) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Cargando facturación...</div>
-      </div>
-    )
+    return <LoadingSpinner texto="Cargando facturación..." />
   }
 
   return (

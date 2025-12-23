@@ -15,6 +15,7 @@ import { Textarea } from "../components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog"
 import { Clock, User, Calendar, FileText, Plus, ArrowRight, CheckCircle, AlertCircle, PlayCircle, ClipboardList } from "lucide-react"
 import { toast } from "../hooks/user-toast"
+import { LoadingSpinner } from "../components/ui/loading-spinner"
 
 export function PaginaOrdenes() {
   const { tiendaActual } = useContextoTienda()
@@ -290,6 +291,12 @@ export function PaginaOrdenes() {
           </Button>
         </div>
 
+      {cargando && ordenes.length === 0 && (
+        <LoadingSpinner texto="Cargando órdenes..." />
+      )}
+
+      {!cargando && (
+        <>
       {/* Tablero Kanban */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {estados.map((estado) => {
@@ -462,6 +469,8 @@ export function PaginaOrdenes() {
             </Button>
           </CardContent>
         </Card>
+      )}
+        </>
       )}
 
       <Dialog open={mostrarDialogoOrden} onOpenChange={setMostrarDialogoOrden}>
