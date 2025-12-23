@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -200,74 +200,8 @@ export default function LandingPage() {
       {/* PLATAFORMA / CARRUSEL (inspirado en PlatformSection.tsx) */}
       <PlatformCarouselSection />
 
-      {/* SECCIÓN: CÓMO FUNCIONA (similar a "How HubSpot works") */}
-      <section className="relative bg-white overflow-hidden py-20">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:gap-16 lg:grid-cols-2 items-center">
-            {/* Columna izquierda: Pasos */}
-            <div className="order-2 lg:order-1">
-              <Badge className="mb-6 bg-blue-100 text-blue-700 border-blue-200 rounded-full px-4 py-1.5 text-xs font-semibold">
-                Proceso Simplificado
-              </Badge>
-              <h2 className="mb-5 text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
-              Cómo TrackMySign encaja en tu día a día
-            </h2>
-              <p className="mb-8 text-base sm:text-lg text-slate-700 leading-relaxed">
-              Desde la primera llamada del cliente hasta la instalación final, TrackMySign te acompaña en cada paso del
-              proceso. Sin hojas de cálculo sueltas ni información perdida.
-            </p>
-              <div className="space-y-5">
-                <div className="flex gap-4 items-start p-4 rounded-xl bg-blue-50/50 border border-blue-100 hover:bg-blue-50 transition-colors">
-                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-md">
-                    <span className="text-white text-sm font-bold">1</span>
-          </div>
-                  <div className="flex-1 pt-0.5">
-                    <p className="font-bold text-lg text-slate-900 mb-1">Cotización Rápida</p>
-                    <p className="text-sm sm:text-base text-slate-600 leading-relaxed">Recibe la solicitud del cliente y genera una cotización profesional en minutos.</p>
-            </div>
-                </div>
-                <div className="flex gap-4 items-start p-4 rounded-xl bg-orange-50/50 border border-orange-100 hover:bg-orange-50 transition-colors">
-                  <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0 shadow-md">
-                    <span className="text-white text-sm font-bold">2</span>
-                  </div>
-                  <div className="flex-1 pt-0.5">
-                    <p className="font-bold text-lg text-slate-900 mb-1">Gestión de Órdenes</p>
-                    <p className="text-sm sm:text-base text-slate-600 leading-relaxed">Convierte la cotización aprobada en orden de trabajo y asigna tareas a tu equipo.</p>
-          </div>
-        </div>
-                <div className="flex gap-4 items-start p-4 rounded-xl bg-pink-50/50 border border-pink-100 hover:bg-pink-50 transition-colors">
-                  <div className="h-8 w-8 rounded-full bg-pink-500 flex items-center justify-center flex-shrink-0 shadow-md">
-                    <span className="text-white text-sm font-bold">3</span>
-          </div>
-                  <div className="flex-1 pt-0.5">
-                    <p className="font-bold text-lg text-slate-900 mb-1">Seguimiento Completo</p>
-                    <p className="text-sm sm:text-base text-slate-600 leading-relaxed">Haz seguimiento del estado, costos y facturación sin salir de la plataforma.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Columna derecha: Placeholder para imagen / video */}
-            <div className="order-1 lg:order-2 flex items-center justify-center">
-              <div className="w-full max-w-lg">
-                <div className="flex h-96 w-full items-center justify-center rounded-2xl border-2 border-dashed border-blue-300 bg-gradient-to-br from-blue-50/50 to-white shadow-xl backdrop-blur-sm">
-                  <div className="text-center p-8">
-                    <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center shadow-lg">
-                      <FileText className="w-10 h-10 text-blue-600" />
-                    </div>
-                    <span className="text-sm font-medium text-slate-600 block">
-                      Espacio para imagen / video
-                    </span>
-                    <span className="text-xs text-slate-500 block mt-1">
-                      "Cómo funciona TrackMySign"
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* SECCIÓN: CÓMO FUNCIONA - Con gráfico de dona interactivo */}
+      <HowItWorksSection />
 
       {/* CARACTERÍSTICAS DESTACADAS - CARRUSEL */}
       <FeaturesCarouselSection caracteristicas={caracteristicas} />
@@ -465,15 +399,12 @@ function CustomersStrip() {
             <div className="relative overflow-hidden mask-fade-edges">
               <div className="flex gap-8 md:gap-12 tech-scroll-infinite items-center">
                 {tecnologiasDuplicadas.map((tech, index) => {
-                  // Tamaños personalizados: Vite = máximo; React = extra grande; Firebase y TypeScript = grande; React Router y Tailwind = pequeño; resto = mediano
-                  const isMaxSize = tech.nombre === "Vite"
+                  // Tamaños personalizados: React = extra grande; Firebase, TypeScript y Vite = grande; React Router y Tailwind = pequeño; resto = mediano
                   const isExtraLarge = tech.nombre === "React"
-                  const isLarge = tech.nombre === "Firebase" || tech.nombre === "TypeScript"
+                  const isLarge = tech.nombre === "Firebase" || tech.nombre === "TypeScript" || tech.nombre === "Vite"
                   const isSmall = tech.nombre === "React Router" || tech.nombre === "Tailwind CSS"
                   
-                  const heightClass = isMaxSize
-                    ? "h-16 md:h-24"
-                    : isExtraLarge
+                  const heightClass = isExtraLarge
                     ? "h-14 md:h-20"
                     : isLarge 
                     ? "h-12 md:h-16" 
@@ -521,27 +452,117 @@ function CustomersStrip() {
   )
 }
 
+// Hook personalizado para animar contadores
+function useCountUp(end, duration = 2000, startOnView = true) {
+  const [count, setCount] = useState(0)
+  const [hasStarted, setHasStarted] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!startOnView) {
+      setHasStarted(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasStarted) {
+          setHasStarted(true)
+        }
+      },
+      { threshold: 0.3 }
+    )
+
+    if (ref.current) {
+      observer.observe(ref.current)
+    }
+
+    return () => observer.disconnect()
+  }, [hasStarted, startOnView])
+
+  useEffect(() => {
+    if (!hasStarted) return
+
+    let startTime = null
+    const startValue = 0
+
+    const animate = (currentTime) => {
+      if (!startTime) startTime = currentTime
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      
+      // Easing function para que desacelere al final
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4)
+      const currentCount = Math.floor(startValue + (end - startValue) * easeOutQuart)
+      
+      setCount(currentCount)
+
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      } else {
+        setCount(end)
+      }
+    }
+
+    requestAnimationFrame(animate)
+  }, [end, duration, hasStarted])
+
+  return { count, ref }
+}
+
+// Componente para cada stat con animación
+function AnimatedStat({ valor, sufijo, etiqueta, color, delay = 0 }) {
+  const { count, ref } = useCountUp(valor, 2000 + delay)
+  
+  return (
+    <div 
+      ref={ref}
+      className="text-center p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 hover:shadow-lg transition-all"
+    >
+      <div className={`text-4xl md:text-5xl font-bold ${color} mb-2 tabular-nums`}>
+        {count.toLocaleString()}{sufijo}
+      </div>
+      <div className="text-sm font-medium text-slate-600">
+        {etiqueta}
+      </div>
+    </div>
+  )
+}
+
 function StatsSection() {
   const stats = [
-    { numero: "200+", etiqueta: "Tiendas Activas", color: "text-blue-600" },
-    { numero: "15K+", etiqueta: "Órdenes Procesadas", color: "text-orange-600" },
-    { numero: "98%", etiqueta: "Satisfacción Cliente", color: "text-green-600" },
-    { numero: "3x", etiqueta: "Más Eficiencia", color: "text-pink-600" },
+    { valor: 500, sufijo: "+", etiqueta: "Usuarios Activos", color: "text-blue-600", delay: 0 },
+    { valor: 15, sufijo: "K+", etiqueta: "Cotizaciones Creadas", color: "text-orange-600", delay: 100 },
+    { valor: 98, sufijo: "%", etiqueta: "Satisfacción Cliente", color: "text-green-600", delay: 200 },
+    { valor: 3, sufijo: "x", etiqueta: "Más Eficiencia", color: "text-pink-600", delay: 300 },
   ]
 
   return (
-    <section className="bg-white py-16">
+    <section className="bg-white pt-8 pb-16">
       <div className="container mx-auto max-w-6xl px-4">
+        {/* Título de la sección */}
+        <div className="text-center mb-10">
+          <Badge className="mb-4 bg-green-100 text-green-700 border-green-200 rounded-full px-4 py-1.5 text-xs font-semibold">
+            Resultados Comprobados
+          </Badge>
+          <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl mb-3">
+            Números que hablan por sí solos
+          </h2>
+          <p className="text-base text-slate-600 max-w-2xl mx-auto">
+            Únete a los usuarios que ya optimizaron su flujo de trabajo con TrackMySign
+          </p>
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
-            <div key={index} className="text-center p-6 rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200 hover:shadow-lg transition-all">
-              <div className={`text-4xl md:text-5xl font-bold ${stat.color} mb-2`}>
-                {stat.numero}
-              </div>
-              <div className="text-sm font-medium text-slate-600">
-                {stat.etiqueta}
-              </div>
-            </div>
+            <AnimatedStat
+              key={index}
+              valor={stat.valor}
+              sufijo={stat.sufijo}
+              etiqueta={stat.etiqueta}
+              color={stat.color}
+              delay={stat.delay}
+            />
           ))}
         </div>
       </div>
@@ -556,73 +577,183 @@ function PlatformCarouselSection() {
     {
       title: "Un panel que centraliza toda tu operación.",
       description:
-        "Visualiza cotizaciones, órdenes y clientes en un solo lugar. TrackMySign es tu fuente de verdad para la tienda.",
+        "Visualiza cotizaciones, órdenes y clientes en un solo lugar. TrackMySign es tu fuente de verdad para tu negocio.",
+      // Ruta: public/landing/plataforma/dashboard.webp
+      imagen: "/landing/plataforma/dashboard.webp",
+      icono: <BarChart3 className="w-8 h-8 text-blue-600" />,
     },
     {
       title: "Cotiza más rápido, con menos errores.",
       description:
         "Crea propuestas consistentes con tus precios y márgenes. Deja de perder tiempo en hojas de cálculo.",
+      // Ruta: public/landing/plataforma/cotizaciones.webp
+      imagen: "/landing/plataforma/cotizaciones.webp",
+      icono: <FileText className="w-8 h-8 text-orange-600" />,
     },
     {
       title: "Sigue cada trabajo hasta la instalación.",
       description:
         "Desde el diseño hasta el montaje, todos saben cuál es el siguiente paso y qué está pendiente.",
+      // Ruta: public/landing/plataforma/seguimiento.webp
+      imagen: "/landing/plataforma/seguimiento.webp",
+      icono: <CheckCircle className="w-8 h-8 text-green-600" />,
     },
   ]
 
   return (
-    <section className="bg-gradient-to-b from-blue-50/80 to-blue-100/40 py-16">
-      <div className="container mx-auto max-w-5xl px-4">
-        <div className="mb-10 text-center">
-          <h2 className="mb-3 text-2xl font-bold text-slate-900 sm:text-3xl">La plataforma para tu tienda</h2>
-          <p className="mx-auto max-w-3xl text-sm text-slate-700 sm:text-base">
+    <section className="relative bg-gradient-to-b from-blue-50/80 to-blue-100/40 py-20 overflow-hidden">
+      {/* SVGs decorativos difuminados */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Círculos grandes difuminados */}
+        <div className="absolute -top-20 -left-20 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -right-32 w-80 h-80 bg-orange-200/25 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 left-1/3 w-72 h-72 bg-purple-200/20 rounded-full blur-3xl" />
+        
+        {/* Formas geométricas SVG difuminadas */}
+        <svg className="absolute top-10 right-10 w-64 h-64 text-blue-300/20 blur-sm" viewBox="0 0 200 200" fill="none">
+          <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+          <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
+          <circle cx="100" cy="100" r="20" fill="currentColor" opacity="0.2" />
+        </svg>
+        
+        <svg className="absolute bottom-20 left-10 w-48 h-48 text-orange-300/15 blur-sm" viewBox="0 0 200 200" fill="none">
+          <path d="M100 20 L180 100 L100 180 L20 100 Z" stroke="currentColor" strokeWidth="2" opacity="0.4" />
+          <path d="M100 50 L150 100 L100 150 L50 100 Z" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
+        </svg>
+        
+        <svg className="absolute top-1/3 left-1/4 w-32 h-32 text-green-300/15 blur-sm" viewBox="0 0 100 100" fill="none">
+          <polygon points="50,10 90,90 10,90" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+        </svg>
+        
+        {/* Líneas onduladas decorativas */}
+        <svg className="absolute bottom-0 left-0 w-full h-40 text-blue-200/10" viewBox="0 0 1200 150" preserveAspectRatio="none">
+          <path d="M0,75 Q300,25 600,75 T1200,75" stroke="currentColor" strokeWidth="3" fill="none" className="blur-sm" />
+          <path d="M0,100 Q300,50 600,100 T1200,100" stroke="currentColor" strokeWidth="2" fill="none" className="blur-sm" opacity="0.5" />
+        </svg>
+        
+        {/* Puntos flotantes */}
+        <div className="absolute top-20 left-1/2 w-3 h-3 bg-blue-400/30 rounded-full blur-sm" />
+        <div className="absolute top-40 right-1/4 w-4 h-4 bg-orange-400/25 rounded-full blur-sm" />
+        <div className="absolute bottom-32 left-1/3 w-2 h-2 bg-purple-400/30 rounded-full blur-sm" />
+      </div>
+
+      <div className="container mx-auto max-w-6xl px-4 relative z-10">
+        <div className="mb-12 text-center">
+          <Badge className="mb-4 bg-blue-100 text-blue-700 border-blue-200 rounded-full px-4 py-1.5 text-xs font-semibold">
+            Plataforma Integral
+          </Badge>
+          <h2 className="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl">La plataforma para tu negocio</h2>
+          <p className="mx-auto max-w-3xl text-base text-slate-700 leading-relaxed">
             Conecta datos y herramientas para saber qué está pasando en cada proyecto, quién es responsable y qué viene
             después.
-              </p>
-            </div>
+          </p>
+        </div>
 
-        <div className="grid gap-10 md:grid-cols-2 md:items-center">
-          <div>
-            <h3 className="mb-4 text-xl font-bold text-slate-900 sm:text-2xl">{slides[active].title}</h3>
-            <p className="text-sm text-slate-700 sm:text-base">{slides[active].description}</p>
+        <div className="grid gap-10 lg:gap-16 md:grid-cols-2 md:items-center">
+          {/* Imagen/Mockup del slide - IZQUIERDA */}
+          <div className="order-2 md:order-1">
+            <div className="relative group">
+              {/* Efecto de brillo detrás */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-orange-400/20 rounded-3xl blur-2xl opacity-60 group-hover:opacity-80 transition-opacity" />
+              
+              <div className="relative rounded-2xl border-2 border-slate-200/80 bg-white/95 p-4 shadow-2xl backdrop-blur-sm overflow-hidden">
+                {/* Barra superior tipo navegador */}
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-400" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                    <div className="w-3 h-3 rounded-full bg-green-400" />
+                  </div>
+                  <div className="flex-1 mx-4">
+                    <div className="h-6 bg-slate-100 rounded-lg flex items-center px-3">
+                      <span className="text-[10px] text-slate-400">trackmysign.app/dashboard</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Contenedor de imagen */}
+                <div className="relative h-56 sm:h-64 lg:h-72 rounded-xl overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
+                  <img 
+                    src={slides[active].imagen}
+                    alt={slides[active].title}
+                    className="w-full h-full object-cover object-top transition-opacity duration-500"
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                      const placeholder = e.target.nextElementSibling
+                      if (placeholder) placeholder.style.display = 'flex'
+                    }}
+                  />
+                  {/* Placeholder cuando no hay imagen */}
+                  <div 
+                    className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-orange-50"
+                    style={{ display: 'none' }}
+                  >
+                    <div className="w-20 h-20 rounded-2xl bg-white shadow-xl flex items-center justify-center mb-4 ring-2 ring-slate-100">
+                      {slides[active].icono}
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 mb-1">Imagen pendiente</p>
+                    <p className="text-xs text-slate-400 text-center px-4">
+                      Sube: {slides[active].imagen?.replace('/landing/plataforma/', '')}
+                    </p>
+                    <p className="text-[10px] text-slate-300 mt-2">
+                      public/landing/plataforma/
+                    </p>
+                  </div>
+                  
+                  {/* Efecto de reflejo en la parte inferior */}
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/80 to-transparent" />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-lg shadow-slate-300/40">
-            <div className="mb-4 h-32 rounded-2xl bg-slate-100" />
-            <p className="text-xs text-slate-500">
-              Espacio para captura de pantalla o mockup de TrackMySign (dashboard, lista de órdenes, etc.).
+          {/* Contenido del slide - DERECHA */}
+          <div className="order-1 md:order-2">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-lg ring-1 ring-slate-200">
+                {slides[active].icono}
+              </div>
+              <div className="flex gap-1">
+                {slides.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      index === active ? "w-8 bg-blue-600" : "w-1.5 bg-slate-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            <h3 className="mb-4 text-2xl font-bold text-slate-900 sm:text-3xl leading-tight">
+              {slides[active].title}
+            </h3>
+            <p className="text-base text-slate-700 leading-relaxed mb-6">
+              {slides[active].description}
             </p>
-          </div>
+            
+            {/* Botones de navegación */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full border-slate-300 hover:bg-white hover:border-blue-300 transition-all"
+                onClick={() => setActive((active - 1 + slides.length) % slides.length)}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full border-slate-300 hover:bg-white hover:border-blue-300 transition-all"
+                onClick={() => setActive((active + 1) % slides.length)}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+              <span className="text-sm text-slate-500 ml-2">
+                {active + 1} / {slides.length}
+              </span>
             </div>
-
-        <div className="mt-8 flex items-center justify-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full border-slate-300"
-            onClick={() => setActive((active - 1 + slides.length) % slides.length)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex gap-2">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setActive(index)}
-                className={`h-2 rounded-full transition-all ${
-                  index === active ? "w-8 bg-slate-900" : "w-2 bg-slate-300"
-                }`}
-              />
-            ))}
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full border-slate-300"
-            onClick={() => setActive((active + 1) % slides.length)}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </section>
@@ -1025,6 +1156,386 @@ function FeaturesCarouselSection({ caracteristicas }) {
         {/* Contador de slides */}
         <div className="text-center mt-6 text-sm text-slate-500 font-medium">
           {currentIndex + 1} / {caracteristicas.length}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Componente de gráfico de dona animado e interactivo
+function AnimatedDonutChart({ activeStep, setActiveStep, isVisible, pasos }) {
+  const steps = [
+    { id: 0, color: "#2563eb", label: "1", icon: <FileText className="w-4 h-4" /> }, // blue-600
+    { id: 1, color: "#f97316", label: "2", icon: <BarChart3 className="w-4 h-4" /> }, // orange-500
+    { id: 2, color: "#ec4899", label: "3", icon: <CheckCircle className="w-4 h-4" /> }, // pink-500
+  ]
+  
+  const radius = 80
+  const strokeWidth = 24
+  const circumference = 2 * Math.PI * radius
+  const segmentLength = circumference / 3
+  const gap = 8 // espacio entre segmentos
+  
+  return (
+    <div className="relative w-80 h-80 md:w-96 md:h-96">
+      {/* Anillo exterior decorativo con pulso */}
+      <div 
+        className={`absolute inset-0 rounded-full border-4 border-dashed transition-all duration-700 ${
+          isVisible ? 'opacity-20 scale-100' : 'opacity-0 scale-90'
+        }`}
+        style={{ 
+          borderColor: steps[activeStep].color,
+          transitionDelay: '200ms'
+        }}
+      />
+      
+      {/* Círculos decorativos pulsantes */}
+      <div 
+        className={`absolute inset-4 rounded-full transition-all duration-1000 ${
+          isVisible ? 'opacity-10' : 'opacity-0'
+        }`}
+        style={{ 
+          backgroundColor: steps[activeStep].color,
+          animation: isVisible ? 'pulse 2s infinite' : 'none'
+        }}
+      />
+      
+      <svg 
+        viewBox="0 0 200 200" 
+        className="w-full h-full transform -rotate-90 relative z-10"
+      >
+        {/* Fondo del círculo */}
+        <circle
+          cx="100"
+          cy="100"
+          r={radius}
+          fill="none"
+          stroke="#e2e8f0"
+          strokeWidth={strokeWidth}
+          className="opacity-30"
+        />
+        
+        {/* Segmentos del gráfico */}
+        {steps.map((step, index) => {
+          const offset = index * segmentLength
+          const isActive = activeStep === index
+          
+          return (
+            <circle
+              key={step.id}
+              cx="100"
+              cy="100"
+              r={radius}
+              fill="none"
+              stroke={step.color}
+              strokeWidth={isActive ? strokeWidth + 8 : strokeWidth}
+              strokeDasharray={`${segmentLength - gap} ${circumference - segmentLength + gap}`}
+              strokeDashoffset={-offset}
+              strokeLinecap="round"
+              className={`cursor-pointer transition-all duration-500 ${
+                isVisible ? 'opacity-100' : 'opacity-0'
+              } ${isActive ? 'filter drop-shadow-lg' : 'opacity-50'}`}
+              style={{
+                transitionDelay: isVisible ? `${index * 200}ms` : '0ms',
+                transform: isActive ? 'scale(1.02)' : 'scale(1)',
+                transformOrigin: 'center',
+              }}
+              onClick={() => setActiveStep(index)}
+            />
+          )
+        })}
+        
+        {/* Líneas conectoras decorativas */}
+        {steps.map((step, index) => {
+          const angle = (index * 120 - 90) * (Math.PI / 180)
+          const innerX = 100 + 55 * Math.cos(angle)
+          const innerY = 100 + 55 * Math.sin(angle)
+          const outerX = 100 + 75 * Math.cos(angle)
+          const outerY = 100 + 75 * Math.sin(angle)
+          const isActive = activeStep === index
+          
+          return (
+            <line
+              key={`line-${step.id}`}
+              x1={innerX}
+              y1={innerY}
+              x2={outerX}
+              y2={outerY}
+              stroke={step.color}
+              strokeWidth={isActive ? 3 : 2}
+              strokeLinecap="round"
+              className={`transition-all duration-300 ${
+                isActive ? 'opacity-60' : 'opacity-20'
+              }`}
+            />
+          )
+        })}
+      </svg>
+      
+      {/* Centro del gráfico con icono y número */}
+      <div className="absolute inset-0 flex items-center justify-center z-20">
+        <div 
+          className={`w-32 h-32 md:w-36 md:h-36 rounded-full bg-white shadow-2xl flex flex-col items-center justify-center transition-all duration-500 ring-4 ring-white ${
+            isVisible ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
+          }`}
+          style={{ 
+            transitionDelay: '400ms',
+            boxShadow: `0 0 40px ${steps[activeStep].color}20, 0 10px 40px rgba(0,0,0,0.1)`
+          }}
+        >
+          {/* Icono del paso */}
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-all duration-300"
+            style={{ backgroundColor: `${steps[activeStep].color}15` }}
+          >
+            <span style={{ color: steps[activeStep].color }}>
+              {steps[activeStep].icon}
+            </span>
+          </div>
+          <span 
+            className="text-3xl md:text-4xl font-bold transition-colors duration-300"
+            style={{ color: steps[activeStep].color }}
+          >
+            {activeStep + 1}
+          </span>
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Paso</span>
+        </div>
+      </div>
+      
+      {/* Etiquetas con nombre del paso alrededor */}
+      {steps.map((step, index) => {
+        // Posiciones para las etiquetas (arriba, derecha-abajo, izquierda-abajo)
+        const positions = [
+          { top: '-8%', left: '50%', transform: 'translateX(-50%)' },
+          { bottom: '5%', right: '-5%', transform: 'none' },
+          { bottom: '5%', left: '-5%', transform: 'none' },
+        ]
+        const isActive = activeStep === index
+        
+        return (
+          <div
+            key={`label-${step.id}`}
+            className={`absolute cursor-pointer transition-all duration-500 ${
+              isVisible ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              ...positions[index],
+              transitionDelay: isVisible ? `${700 + index * 100}ms` : '0ms',
+            }}
+            onClick={() => setActiveStep(index)}
+          >
+            <div 
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300 ${
+                isActive 
+                  ? 'bg-white shadow-lg scale-105 ring-2' 
+                  : 'bg-white/80 shadow-md hover:bg-white hover:shadow-lg'
+              }`}
+              style={{ 
+                ringColor: isActive ? step.color : 'transparent',
+                borderColor: step.color 
+              }}
+            >
+              <div 
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all duration-300 ${
+                  isActive ? 'scale-110' : ''
+                }`}
+                style={{ backgroundColor: step.color }}
+              >
+                {step.label}
+              </div>
+              <span className={`text-xs font-semibold transition-colors duration-300 whitespace-nowrap ${
+                isActive ? 'text-slate-900' : 'text-slate-600'
+              }`}>
+                {pasos[index]?.titulo || `Paso ${index + 1}`}
+              </span>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function HowItWorksSection() {
+  const [activeStep, setActiveStep] = useState(0)
+  const [isVisible, setIsVisible] = useState(false)
+  const sectionRef = useRef(null)
+  
+  const pasos = [
+    {
+      titulo: "Cotización Rápida",
+      descripcion: "Recibe la solicitud del cliente y genera una cotización profesional en minutos.",
+      color: "blue",
+      bgColor: "bg-blue-50/50",
+      borderColor: "border-blue-100",
+      hoverBg: "hover:bg-blue-50",
+      numberBg: "bg-blue-600",
+    },
+    {
+      titulo: "Gestión de Órdenes",
+      descripcion: "Convierte la cotización aprobada en orden de trabajo y asigna tareas a tu equipo.",
+      color: "orange",
+      bgColor: "bg-orange-50/50",
+      borderColor: "border-orange-100",
+      hoverBg: "hover:bg-orange-50",
+      numberBg: "bg-orange-500",
+    },
+    {
+      titulo: "Seguimiento Completo",
+      descripcion: "Haz seguimiento del estado, costos y facturación sin salir de la plataforma.",
+      color: "pink",
+      bgColor: "bg-pink-50/50",
+      borderColor: "border-pink-100",
+      hoverBg: "hover:bg-pink-50",
+      numberBg: "bg-pink-500",
+    },
+  ]
+
+  // Observer para detectar cuando la sección está visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+        }
+      },
+      { threshold: 0.2 }
+    )
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
+  // Auto-rotate cada 4 segundos
+  useEffect(() => {
+    if (!isVisible) return
+    
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 3)
+    }, 4000)
+
+    return () => clearInterval(interval)
+  }, [isVisible])
+
+  return (
+    <section ref={sectionRef} className="relative bg-white overflow-hidden py-20">
+      {/* SVGs decorativos difuminados */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Círculos difuminados */}
+        <div className="absolute -top-20 -right-20 w-96 h-96 bg-blue-100/40 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -left-32 w-80 h-80 bg-orange-100/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-20 right-1/3 w-72 h-72 bg-pink-100/30 rounded-full blur-3xl" />
+        
+        {/* Formas geométricas difuminadas */}
+        <svg className="absolute top-20 left-10 w-48 h-48 text-blue-200/20 blur-sm" viewBox="0 0 200 200" fill="none">
+          <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="2" opacity="0.4" />
+          <circle cx="100" cy="100" r="50" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
+        </svg>
+        
+        <svg className="absolute bottom-20 right-10 w-40 h-40 text-pink-200/20 blur-sm" viewBox="0 0 200 200" fill="none">
+          <path d="M100 20 L180 100 L100 180 L20 100 Z" stroke="currentColor" strokeWidth="2" opacity="0.4" />
+        </svg>
+        
+        <svg className="absolute top-1/2 right-1/4 w-24 h-24 text-orange-200/20 blur-sm" viewBox="0 0 100 100" fill="none">
+          <polygon points="50,10 90,90 10,90" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+        </svg>
+        
+        {/* Puntos decorativos */}
+        <div className="absolute top-32 right-1/3 w-3 h-3 bg-blue-400/20 rounded-full blur-sm" />
+        <div className="absolute bottom-40 left-1/4 w-4 h-4 bg-orange-400/20 rounded-full blur-sm" />
+        <div className="absolute top-1/2 left-10 w-2 h-2 bg-pink-400/20 rounded-full blur-sm" />
+      </div>
+
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid gap-12 lg:gap-16 lg:grid-cols-2 items-center">
+          {/* Columna izquierda: Gráfico de dona */}
+          <div className="order-1 lg:order-1 flex items-center justify-center">
+            <div className="relative">
+              {/* Efecto de brillo detrás */}
+              <div className="absolute -inset-8 bg-gradient-to-r from-blue-200/30 via-orange-200/20 to-pink-200/30 rounded-full blur-2xl" />
+              
+              <AnimatedDonutChart 
+                activeStep={activeStep} 
+                setActiveStep={setActiveStep}
+                isVisible={isVisible}
+                pasos={pasos}
+              />
+            </div>
+          </div>
+
+          {/* Columna derecha: Contenido */}
+          <div className="order-2 lg:order-2">
+            <Badge className="mb-6 bg-blue-100 text-blue-700 border-blue-200 rounded-full px-4 py-1.5 text-xs font-semibold">
+              Proceso Simplificado
+            </Badge>
+            <h2 className="mb-5 text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
+              Cómo TrackMySign encaja en tu día a día
+            </h2>
+            <p className="mb-8 text-base sm:text-lg text-slate-700 leading-relaxed">
+              Desde la primera llamada del cliente hasta la instalación final, TrackMySign te acompaña en cada paso del
+              proceso. Sin hojas de cálculo sueltas ni información perdida.
+            </p>
+            
+            {/* Lista de pasos interactiva */}
+            <div className="space-y-4">
+              {pasos.map((paso, index) => (
+                <div 
+                  key={index}
+                  className={`flex gap-4 items-start p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                    activeStep === index 
+                      ? `${paso.bgColor} ${paso.borderColor} shadow-lg scale-[1.02] border-2` 
+                      : `bg-white/50 border-slate-200 hover:border-slate-300 ${paso.hoverBg}`
+                  }`}
+                  onClick={() => setActiveStep(index)}
+                >
+                  <div className={`h-10 w-10 rounded-full ${paso.numberBg} flex items-center justify-center flex-shrink-0 shadow-md transition-transform duration-300 ${
+                    activeStep === index ? 'scale-110' : ''
+                  }`}>
+                    <span className="text-white text-sm font-bold">{index + 1}</span>
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <p className={`font-bold text-lg mb-1 transition-colors duration-300 ${
+                      activeStep === index ? 'text-slate-900' : 'text-slate-700'
+                    }`}>
+                      {paso.titulo}
+                    </p>
+                    <p className={`text-sm sm:text-base leading-relaxed transition-all duration-300 ${
+                      activeStep === index ? 'text-slate-600 max-h-20 opacity-100' : 'text-slate-500 max-h-20 opacity-80'
+                    }`}>
+                      {paso.descripcion}
+                    </p>
+                  </div>
+                  {/* Indicador de activo */}
+                  <div className={`self-center transition-all duration-300 ${
+                    activeStep === index ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
+                  }`}>
+                    <ChevronRight className="w-5 h-5 text-slate-400" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Indicador de progreso */}
+            <div className="mt-6 flex items-center gap-2">
+              {pasos.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveStep(index)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    activeStep === index 
+                      ? 'w-8 bg-blue-600' 
+                      : 'w-2 bg-slate-300 hover:bg-slate-400'
+                  }`}
+                />
+              ))}
+              <span className="ml-3 text-xs text-slate-500">
+                Paso {activeStep + 1} de 3
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
