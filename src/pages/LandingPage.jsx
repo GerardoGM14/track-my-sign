@@ -646,8 +646,8 @@ function PlatformCarouselSection() {
           <p className="mx-auto max-w-3xl text-base text-slate-700 leading-relaxed">
             Conecta datos y herramientas para saber qué está pasando en cada proyecto, quién es responsable y qué viene
             después.
-          </p>
-        </div>
+              </p>
+            </div>
 
         <div className="grid gap-10 lg:gap-16 md:grid-cols-2 md:items-center">
           {/* Imagen/Mockup del slide - IZQUIERDA */}
@@ -669,8 +669,8 @@ function PlatformCarouselSection() {
                       <span className="text-[10px] text-slate-400">trackmysign.app/dashboard</span>
                     </div>
                   </div>
-                </div>
-                
+          </div>
+
                 {/* Contenedor de imagen */}
                 <div className="relative h-56 sm:h-64 lg:h-72 rounded-xl overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
                   <img 
@@ -704,8 +704,8 @@ function PlatformCarouselSection() {
                   <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/80 to-transparent" />
                 </div>
               </div>
-            </div>
           </div>
+            </div>
 
           {/* Contenido del slide - DERECHA */}
           <div className="order-1 md:order-2">
@@ -714,15 +714,15 @@ function PlatformCarouselSection() {
                 {slides[active].icono}
               </div>
               <div className="flex gap-1">
-                {slides.map((_, index) => (
+            {slides.map((_, index) => (
                   <div
-                    key={index}
+                key={index}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
                       index === active ? "w-8 bg-blue-600" : "w-1.5 bg-slate-300"
-                    }`}
-                  />
-                ))}
-              </div>
+                }`}
+              />
+            ))}
+          </div>
             </div>
             <h3 className="mb-4 text-2xl font-bold text-slate-900 sm:text-3xl leading-tight">
               {slides[active].title}
@@ -733,9 +733,9 @@ function PlatformCarouselSection() {
             
             {/* Botones de navegación */}
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
+          <Button
+            variant="outline"
+            size="icon"
                 className="rounded-full border-slate-300 hover:bg-white hover:border-blue-300 transition-all"
                 onClick={() => setActive((active - 1 + slides.length) % slides.length)}
               >
@@ -745,10 +745,10 @@ function PlatformCarouselSection() {
                 variant="outline"
                 size="icon"
                 className="rounded-full border-slate-300 hover:bg-white hover:border-blue-300 transition-all"
-                onClick={() => setActive((active + 1) % slides.length)}
-              >
+            onClick={() => setActive((active + 1) % slides.length)}
+          >
                 <ChevronRight className="h-5 w-5" />
-              </Button>
+          </Button>
               <span className="text-sm text-slate-500 ml-2">
                 {active + 1} / {slides.length}
               </span>

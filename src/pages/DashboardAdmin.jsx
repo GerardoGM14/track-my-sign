@@ -25,6 +25,8 @@ import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
 import { LoadingSpinner } from "../components/ui/loading-spinner"
+import nameSub from "../assets/subs/name_sub.svg"
+import TarjetaLicencia from "../components/TarjetaLicencia"
 
 export default function DashboardAdmin() {
   const { slugTienda } = useParams()
@@ -345,7 +347,7 @@ export default function DashboardAdmin() {
   return (
     <div className="space-y-6 min-h-full px-18">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 leading-tight">Gestión de Tienda</h1>
           <p className="text-sm text-gray-600 mt-1 leading-tight">Bienvenido al Dashboard de TrackMySign</p>
@@ -360,6 +362,17 @@ export default function DashboardAdmin() {
             Reportes
         </Button>
         </div>
+      </div>
+
+      {/* SVG Decorativos encima de los cards */}
+      <div className="flex items-start justify-between gap-1 mb-4 w-full">
+        <img 
+          src={nameSub} 
+          alt="Decoración nombre" 
+          className="h-[180px] md:h-[200px] lg:h-[220px] w-auto object-contain"
+          style={{ display: 'block', margin: 0, padding: 0, lineHeight: 0, flexShrink: 0 }}
+        />
+        <TarjetaLicencia />
       </div>
 
       {/* KPIs Cards (estilo dashlite exacto) */}
@@ -518,10 +531,6 @@ export default function DashboardAdmin() {
                 <div className="w-3 h-3 rounded-full bg-orange-500" />
                 <span className="text-xs text-gray-600 leading-tight">Facturas</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-pink-500" />
-                <span className="text-xs text-gray-600 leading-tight">Ingresos (K)</span>
-              </div>
             </div>
             {/* Gráfico */}
             <div className="h-64 relative" ref={(el) => { if (el) menuRefs.current['chart'] = el }}>
@@ -541,11 +550,6 @@ export default function DashboardAdmin() {
                     <stop offset="0%" stopColor="#f97316" stopOpacity="0.15" />
                     <stop offset="50%" stopColor="#f97316" stopOpacity="0.08" />
                     <stop offset="100%" stopColor="#f97316" stopOpacity="0.02" />
-                  </linearGradient>
-                  <linearGradient id="gradient-ingresos" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#ec4899" stopOpacity="0.15" />
-                    <stop offset="50%" stopColor="#ec4899" stopOpacity="0.08" />
-                    <stop offset="100%" stopColor="#ec4899" stopOpacity="0.02" />
                   </linearGradient>
                   {/* Clip path para limitar el área sombreada al área del gráfico */}
                   <clipPath id="chart-clip">
@@ -597,19 +601,9 @@ export default function DashboardAdmin() {
                     fill="url(#gradient-facturas)"
                     clipPath="url(#chart-clip)"
                   />
-                  <polygon
-                    points={generarPuntosAreaAbsoluto(
-                      performanceData.map((d) => d.ingresos / 100),
-                      25,
-                      240,
-                      440
-                    )}
-                    fill="url(#gradient-ingresos)"
-                    clipPath="url(#chart-clip)"
-                  />
                 </g>
                 {/* Líneas del gráfico - dibujadas después de las áreas para que estén encima */}
-                <g transform="translate(40, 0)">
+                <g transform="translate(40, 0)" clipPath="url(#chart-clip)">
                   <polyline
                     points={generarPuntosLineaAbsoluto(
                       performanceData.map((d) => d.cotizaciones),
@@ -645,19 +639,6 @@ export default function DashboardAdmin() {
                     )}
                     fill="none"
                     stroke="#f97316"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <polyline
-                    points={generarPuntosLineaAbsoluto(
-                      performanceData.map((d) => d.ingresos / 100),
-                      25,
-                      240,
-                      440
-                    )}
-                    fill="none"
-                    stroke="#ec4899"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -733,32 +714,6 @@ export default function DashboardAdmin() {
                               x: e.clientX - rect.left,
                               y: e.clientY - rect.top,
                               text: `Facturas: ${d.facturas}`,
-                              fecha: d.fecha
-                            })
-                          }
-                        }}
-                        onMouseLeave={() => setTooltip(null)}
-                      />
-                    </g>
-                  )
-                })}
-                {performanceData.map((d, i) => {
-                  const x = 40 + (i / (performanceData.length - 1)) * 440
-                  const y = 240 - (d.ingresos / 100 / 25) * 240
-                  return (
-                    <g key={`ingresos-${i}`} transform={`translate(${x}, ${y})`}>
-                      <circle 
-                        r="4" 
-                        fill="#ec4899" 
-                        className="hover:r-5 transition-all cursor-pointer"
-                        onMouseEnter={(e) => {
-                          const chartContainer = menuRefs.current['chart']
-                          if (chartContainer) {
-                            const rect = chartContainer.getBoundingClientRect()
-                            setTooltip({
-                              x: e.clientX - rect.left,
-                              y: e.clientY - rect.top,
-                              text: `Ingresos: $${(d.ingresos / 1000).toFixed(1)}K`,
                               fecha: d.fecha
                             })
                           }

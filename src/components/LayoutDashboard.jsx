@@ -1,17 +1,20 @@
 "use client"
 import SidebarTienda from "./SidebarTienda"
-import { MessageSquare, Bell, Globe, User, Settings, Activity, LogOut, ChevronDown, Menu } from "lucide-react"
+import { MessageSquare, Bell, Globe, User, Settings, Activity, LogOut, ChevronDown, Menu, X, Shield } from "lucide-react"
 import { useAuth } from "../contexts/ContextoAuth"
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import mountain from "../assets/mountain.svg"
+import TarjetaLicencia from "./TarjetaLicencia"
 
 export default function LayoutDashboard({ children }) {
   const { usuario, cerrarSesion } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showLicenciaModal, setShowLicenciaModal] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const menuRef = useRef(null)
+  const licenciaModalRef = useRef(null)
   const scrollContainerRef = useRef(null)
   const navigate = useNavigate()
   const location = useLocation()
@@ -46,16 +49,19 @@ export default function LayoutDashboard({ children }) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setShowUserMenu(false)
       }
+      if (licenciaModalRef.current && !licenciaModalRef.current.contains(event.target)) {
+        setShowLicenciaModal(false)
+      }
     }
 
-    if (showUserMenu) {
+    if (showUserMenu || showLicenciaModal) {
       document.addEventListener("mousedown", handleClickOutside)
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [showUserMenu])
+  }, [showUserMenu, showLicenciaModal])
 
   // Detectar scroll para cambiar el topbar y mostrar scrollbar
   useEffect(() => {
@@ -156,8 +162,22 @@ export default function LayoutDashboard({ children }) {
 
             {/* Iconos del header */}
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
+            {/* Botón Super Admin - solo para admins */}
+            {usuario?.rol === "admin" && (
+              <button
+                onClick={() => navigate("/super-admin/licencias")}
+                className="relative p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden sm:flex items-center gap-1"
+                title="Super Admin"
+              >
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+            )}
+            
             {/* Icono de Mensajes - oculto en móvil pequeño */}
-            <button className="relative p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden sm:flex">
+            <button 
+              onClick={() => setShowLicenciaModal(true)}
+              className="relative p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden sm:flex"
+            >
               <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
 
@@ -246,6 +266,30 @@ export default function LayoutDashboard({ children }) {
           <div className="flex flex-1 flex-col gap-3 sm:gap-4 px-2 sm:px-4 md:px-6 lg:px-8 pb-4 sm:pb-6 min-h-full">{children}</div>
         </div>
       </div>
+
+      {/* Modal de Licencia */}
+      {showLicenciaModal && (
+        <>
+          <div 
+            className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+            onClick={() => setShowLicenciaModal(false)}
+          />
+          <div
+            ref={licenciaModalRef}
+            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[101] bg-transparent rounded-xl shadow-2xl p-0 max-w-md w-full mx-4"
+          >
+            <div className="relative">
+              <button
+                onClick={() => setShowLicenciaModal(false)}
+                className="absolute -top-2 -right-2 z-10 p-1.5 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="h-4 w-4 text-gray-500" />
+              </button>
+              <TarjetaLicencia />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

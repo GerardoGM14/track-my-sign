@@ -12,8 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog"
-import { Clock, User, Calendar, FileText, Plus, ArrowRight, CheckCircle, AlertCircle, PlayCircle, ClipboardList } from "lucide-react"
+import { Clock, User, Calendar, FileText, Plus, ArrowRight, CheckCircle, AlertCircle, PlayCircle, ClipboardList, X } from "lucide-react"
 import { toast } from "../hooks/user-toast"
 import { LoadingSpinner } from "../components/ui/loading-spinner"
 
@@ -163,13 +162,7 @@ export function PaginaOrdenes() {
 
       await cargarDatos()
       setMostrarDialogoOrden(false)
-      setNuevaOrden({
-        cotizacionId: "",
-        prioridad: "media",
-        fechaEntrega: "",
-        empleadoAsignado: "",
-        notas: "",
-      })
+      resetearFormularioOrden()
       toast({
         title: "Orden creada",
         description: "La orden se ha creado exitosamente",
@@ -272,6 +265,16 @@ export function PaginaOrdenes() {
   const obtenerSiguienteEstado = (estadoActual) => {
     const indiceActual = estados.findIndex((e) => e.id === estadoActual)
     return indiceActual < estados.length - 1 ? estados[indiceActual + 1] : null
+  }
+
+  const resetearFormularioOrden = () => {
+    setNuevaOrden({
+      cotizacionId: "",
+      prioridad: "media",
+      fechaEntrega: "",
+      empleadoAsignado: "",
+      notas: "",
+    })
   }
 
   return (
@@ -473,108 +476,198 @@ export function PaginaOrdenes() {
         </>
       )}
 
-      <Dialog open={mostrarDialogoOrden} onOpenChange={setMostrarDialogoOrden}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crear Nueva Orden</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Cotización Aprobada</Label>
-              <Select
-                value={nuevaOrden.cotizacionId}
-                onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, cotizacionId: value })}
+      {/* Overlay oscuro cuando el sidebar está abierto */}
+      {mostrarDialogoOrden && (
+        <div 
+          className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            margin: 0,
+            padding: 0
+          }}
+          onClick={() => {
+            setMostrarDialogoOrden(false)
+            resetearFormularioOrden()
+          }}
+        />
+      )}
+
+      {/* Sidebar que se desliza desde la derecha */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[101] transform transition-transform duration-300 ease-in-out ${
+          mostrarDialogoOrden ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="h-full flex flex-col overflow-y-auto bg-gray-50">
+          {/* Header del sidebar */}
+          <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Nueva Orden
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Crea una orden de trabajo desde una cotización aprobada
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setMostrarDialogoOrden(false)
+                  resetearFormularioOrden()
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cotización" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cotizaciones.map((cotizacion) => (
-                    <SelectItem key={cotizacion.id} value={cotizacion.id}>
-                      {cotizacion.numero} - {cotizacion.cliente.nombre} (€{cotizacion.totales?.total})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
             </div>
+          </div>
 
-            <div>
-              <Label>Prioridad</Label>
-              <Select
-                value={nuevaOrden.prioridad}
-                onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, prioridad: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {prioridades.map((prioridad) => (
-                    <SelectItem key={prioridad.value} value={prioridad.value}>
-                      {prioridad.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Contenido del formulario */}
+          <div className="flex-1 p-6">
+            <div className="space-y-6">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                  <FileText className="h-3.5 w-3.5 text-gray-400" />
+                  Cotización Aprobada <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={nuevaOrden.cotizacionId}
+                  onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, cotizacionId: value })}
+                >
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10 w-full">
+                    <SelectValue placeholder="Seleccionar cotización" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-[102]">
+                    {cotizaciones.map((cotizacion) => (
+                      <SelectItem 
+                        key={cotizacion.id} 
+                        value={cotizacion.id}
+                        className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5 text-sm"
+                      >
+                        {cotizacion.numero} - {cotizacion.cliente.nombre} (€{cotizacion.totales?.total})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 text-gray-400" />
+                  Prioridad
+                </Label>
+                <Select
+                  value={nuevaOrden.prioridad}
+                  onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, prioridad: value })}
+                >
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-[102]">
+                    {prioridades.map((prioridad) => (
+                      <SelectItem 
+                        key={prioridad.value} 
+                        value={prioridad.value}
+                        className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5 text-sm"
+                      >
+                        {prioridad.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                  <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                  Fecha de Entrega <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="date"
+                  value={nuevaOrden.fechaEntrega}
+                  onChange={(e) => setNuevaOrden({ ...nuevaOrden, fechaEntrega: e.target.value })}
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                  <User className="h-3.5 w-3.5 text-gray-400" />
+                  Empleado Asignado
+                </Label>
+                <Select
+                  value={nuevaOrden.empleadoAsignado}
+                  onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, empleadoAsignado: value })}
+                >
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10 w-full">
+                    <SelectValue placeholder="Seleccionar empleado" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-[102]">
+                    {empleados.map((empleado) => (
+                      <SelectItem 
+                        key={empleado.id} 
+                        value={empleado.id}
+                        className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5 text-sm"
+                      >
+                        {empleado.nombre} ({empleado.rol})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                  <FileText className="h-3.5 w-3.5 text-gray-400" />
+                  Notas
+                </Label>
+                <Textarea
+                  value={nuevaOrden.notas}
+                  onChange={(e) => setNuevaOrden({ ...nuevaOrden, notas: e.target.value })}
+                  placeholder="Notas adicionales para la orden"
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[100px] resize-y"
+                  rows={4}
+                />
+              </div>
             </div>
+          </div>
 
-            <div>
-              <Label>Fecha de Entrega</Label>
-              <Input
-                type="date"
-                value={nuevaOrden.fechaEntrega}
-                onChange={(e) => setNuevaOrden({ ...nuevaOrden, fechaEntrega: e.target.value })}
-                required
-              />
-            </div>
-
-            <div>
-              <Label>Empleado Asignado</Label>
-              <Select
-                value={nuevaOrden.empleadoAsignado}
-                onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, empleadoAsignado: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar empleado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empleados.map((empleado) => (
-                    <SelectItem key={empleado.id} value={empleado.id}>
-                      {empleado.nombre} ({empleado.rol})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Notas</Label>
-              <Textarea
-                value={nuevaOrden.notas}
-                onChange={(e) => setNuevaOrden({ ...nuevaOrden, notas: e.target.value })}
-                placeholder="Notas adicionales para la orden"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
+          {/* Footer con botones */}
+          <div className="p-6 border-t border-gray-200 bg-white sticky bottom-0">
+            <div className="flex gap-3">
               <Button
                 onClick={crearOrdenDesdeCotizacion}
                 disabled={cargando || !nuevaOrden.cotizacionId || !nuevaOrden.fechaEntrega}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
               >
                 {cargando ? "Creando..." : "Crear Orden"}
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => setMostrarDialogoOrden(false)}
+                onClick={() => {
+                  setMostrarDialogoOrden(false)
+                  resetearFormularioOrden()
+                }}
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Cancelar
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </div>
   )
 }

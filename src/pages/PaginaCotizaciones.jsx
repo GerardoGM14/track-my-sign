@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore"
 import { db } from "../lib/firebase"
 import { useContextoTienda } from "../contexts/ContextoTienda"
@@ -11,9 +11,9 @@ import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Badge } from "../components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog"
-import { Plus, Trash2, FileText, Send, Edit, CheckCircle, XCircle, Clock, DollarSign } from "lucide-react"
+import { Plus, Trash2, FileText, Send, Edit, CheckCircle, XCircle, Clock, DollarSign, X, User, Mail, Phone, Building } from "lucide-react"
 import { LoadingSpinner } from "../components/ui/loading-spinner"
+import { toast } from "../hooks/user-toast"
 
 export function PaginaCotizaciones() {
   const { tiendaActual } = useContextoTienda()
@@ -23,6 +23,7 @@ export function PaginaCotizaciones() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [cotizacionEditando, setCotizacionEditando] = useState(null)
   const [cargando, setCargando] = useState(false)
+  const formRef = useRef(null)
 
   const [formulario, setFormulario] = useState({
     numero: "",
@@ -353,21 +354,78 @@ export function PaginaCotizaciones() {
         </Button>
       </div>
 
-      {/* Formulario en Dialog */}
-      <Dialog open={mostrarFormulario} onOpenChange={setMostrarFormulario}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-900">
-              {cotizacionEditando ? "Editar Cotización" : "Nueva Cotización"}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={manejarSubmit} className="space-y-6">
-            {/* Información del cliente */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Información del Cliente</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Overlay oscuro cuando el sidebar está abierto */}
+      {mostrarFormulario && (
+        <div 
+          className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            margin: 0,
+            padding: 0
+          }}
+          onClick={() => {
+            setMostrarFormulario(false)
+            resetearFormulario()
+          }}
+        />
+      )}
+
+      {/* Sidebar que se desliza desde la derecha */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-2xl bg-white shadow-2xl z-[101] transform transition-transform duration-300 ease-in-out ${
+          mostrarFormulario ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="h-full flex flex-col overflow-y-auto bg-gray-50">
+          {/* Header del sidebar */}
+          <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {cotizacionEditando ? "Editar Cotización" : "Nueva Cotización"}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {cotizacionEditando ? "Modifica la información de la cotización" : "Completa la información para crear una nueva cotización"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setMostrarFormulario(false)
+                  resetearFormulario()
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          {/* Contenido del formulario */}
+          <div className="flex-1 p-6">
+            <form ref={formRef} onSubmit={manejarSubmit} className="space-y-6">
+              {/* Información del cliente */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <FileText className="h-4 w-4 text-gray-600" />
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Información del Cliente</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="nombreCliente">Nombre del Cliente</Label>
+                    <Label htmlFor="nombreCliente" className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                      <User className="h-3.5 w-3.5 text-gray-400" />
+                      Nombre del Cliente <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       id="nombreCliente"
                       value={formulario.cliente.nombre}
@@ -377,11 +435,15 @@ export function PaginaCotizaciones() {
                           cliente: { ...formulario.cliente, nombre: e.target.value },
                         })
                       }
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="emailCliente">Email</Label>
+                    <Label htmlFor="emailCliente" className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5 text-gray-400" />
+                      Email <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       id="emailCliente"
                       type="email"
@@ -392,11 +454,15 @@ export function PaginaCotizaciones() {
                           cliente: { ...formulario.cliente, email: e.target.value },
                         })
                       }
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="telefonoCliente">Teléfono</Label>
+                    <Label htmlFor="telefonoCliente" className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5 text-gray-400" />
+                      Teléfono
+                    </Label>
                     <Input
                       id="telefonoCliente"
                       value={formulario.cliente.telefono}
@@ -406,10 +472,14 @@ export function PaginaCotizaciones() {
                           cliente: { ...formulario.cliente, telefono: e.target.value },
                         })
                       }
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="empresaCliente">Empresa</Label>
+                    <Label htmlFor="empresaCliente" className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                      <Building className="h-3.5 w-3.5 text-gray-400" />
+                      Empresa
+                    </Label>
                     <Input
                       id="empresaCliente"
                       value={formulario.cliente.empresa}
@@ -419,83 +489,100 @@ export function PaginaCotizaciones() {
                           cliente: { ...formulario.cliente, empresa: e.target.value },
                         })
                       }
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Agregar items */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Agregar Producto</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                  <Plus className="h-4 w-4 text-gray-600" />
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Agregar Producto</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-4 p-4 border border-gray-200 rounded-lg bg-white">
                   <div>
-                    <Label>Producto</Label>
+                    <Label className="text-sm font-medium text-gray-700 mb-1.5">Producto</Label>
                     <Select
                       value={nuevoItem.productoId}
                       onValueChange={(value) => setNuevoItem({ ...nuevoItem, productoId: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10 w-full">
                         <SelectValue placeholder="Seleccionar producto" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-[102]">
                         {productos.map((producto) => (
-                          <SelectItem key={producto.id} value={producto.id}>
+                          <SelectItem 
+                            key={producto.id} 
+                            value={producto.id}
+                            className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5 text-sm"
+                          >
                             {producto.nombre} - €{producto.precioBase}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label>Cantidad</Label>
-                    <Input
-                      type="number"
-                      value={nuevoItem.cantidad}
-                      onChange={(e) => setNuevoItem({ ...nuevoItem, cantidad: Number.parseInt(e.target.value) })}
-                      min="1"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-1.5">Cantidad</Label>
+                      <Input
+                        type="number"
+                        value={nuevoItem.cantidad}
+                        onChange={(e) => setNuevoItem({ ...nuevoItem, cantidad: Number.parseInt(e.target.value) })}
+                        min="1"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-1.5">Descuento (%)</Label>
+                      <Input
+                        type="number"
+                        value={nuevoItem.descuento}
+                        onChange={(e) => setNuevoItem({ ...nuevoItem, descuento: Number.parseFloat(e.target.value) })}
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-1.5">Ancho (cm)</Label>
+                      <Input
+                        type="number"
+                        value={nuevoItem.ancho}
+                        onChange={(e) => setNuevoItem({ ...nuevoItem, ancho: Number.parseFloat(e.target.value) })}
+                        step="0.1"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700 mb-1.5">Alto (cm)</Label>
+                      <Input
+                        type="number"
+                        value={nuevoItem.alto}
+                        onChange={(e) => setNuevoItem({ ...nuevoItem, alto: Number.parseFloat(e.target.value) })}
+                        step="0.1"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <Label>Ancho (cm)</Label>
-                    <Input
-                      type="number"
-                      value={nuevoItem.ancho}
-                      onChange={(e) => setNuevoItem({ ...nuevoItem, ancho: Number.parseFloat(e.target.value) })}
-                      step="0.1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Alto (cm)</Label>
-                    <Input
-                      type="number"
-                      value={nuevoItem.alto}
-                      onChange={(e) => setNuevoItem({ ...nuevoItem, alto: Number.parseFloat(e.target.value) })}
-                      step="0.1"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label>Descripción</Label>
+                    <Label className="text-sm font-medium text-gray-700 mb-1.5">Descripción</Label>
                     <Input
                       value={nuevoItem.descripcion}
                       onChange={(e) => setNuevoItem({ ...nuevoItem, descripcion: e.target.value })}
                       placeholder="Descripción adicional"
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
                     />
                   </div>
                   <div>
-                    <Label>Descuento (%)</Label>
-                    <Input
-                      type="number"
-                      value={nuevoItem.descuento}
-                      onChange={(e) => setNuevoItem({ ...nuevoItem, descuento: Number.parseFloat(e.target.value) })}
-                      min="0"
-                      max="100"
-                      step="0.1"
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button type="button" onClick={agregarItem} className="w-full">
+                    <Button type="button" onClick={agregarItem} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                       <Plus className="w-4 h-4 mr-2" />
-                      Agregar
+                      Agregar Producto
                     </Button>
                   </div>
                 </div>
@@ -503,24 +590,35 @@ export function PaginaCotizaciones() {
 
               {/* Lista de items */}
               {formulario.items.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Items de la Cotización</h3>
-                  <div className="space-y-2">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                    <FileText className="h-4 w-4 text-gray-600" />
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Items de la Cotización</h3>
+                  </div>
+                  <div className="space-y-3">
                     {formulario.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">{item.nombreProducto}</div>
-                          <div className="text-sm text-gray-600">
-                            {item.descripcion && `${item.descripcion} - `}
-                            Cantidad: {item.cantidad}
-                            {item.ancho && item.alto && ` - ${item.ancho}x${item.alto}cm`}
-                            {item.descuento > 0 && ` - Descuento: ${item.descuento}%`}
+                      <div key={item.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-white hover:shadow-md transition-shadow">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 mb-1">{item.nombreProducto}</div>
+                          <div className="text-sm text-gray-600 space-x-2">
+                            <span>Cantidad: {item.cantidad}</span>
+                            {item.ancho && item.alto && <span>• {item.ancho}x{item.alto}cm</span>}
+                            {item.descuento > 0 && <span className="text-red-600">• Descuento: {item.descuento}%</span>}
                           </div>
+                          {item.descripcion && (
+                            <div className="text-xs text-gray-500 mt-1 italic">{item.descripcion}</div>
+                          )}
                         </div>
-                        <div className="text-right mr-4">
-                          <div className="font-semibold">€{calcularPrecioItem(item).toFixed(2)}</div>
+                        <div className="text-right mr-4 min-w-[80px]">
+                          <div className="font-bold text-blue-600">€{calcularPrecioItem(item).toFixed(2)}</div>
                         </div>
-                        <Button type="button" variant="destructive" size="sm" onClick={() => eliminarItem(item.id)}>
+                        <Button 
+                          type="button" 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => eliminarItem(item.id)}
+                          className="flex-shrink-0"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -530,12 +628,18 @@ export function PaginaCotizaciones() {
               )}
 
               {/* Totales y configuración */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Configuración</h3>
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                    <Clock className="h-4 w-4 text-gray-600" />
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Configuración</h3>
+                  </div>
                   <div className="space-y-4">
                     <div>
-                      <Label>Descuento Global (%)</Label>
+                      <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                        <DollarSign className="h-3.5 w-3.5 text-gray-400" />
+                        Descuento Global (%)
+                      </Label>
                       <Input
                         type="number"
                         value={formulario.descuentoGlobal}
@@ -545,10 +649,14 @@ export function PaginaCotizaciones() {
                         min="0"
                         max="100"
                         step="0.1"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
                       />
                     </div>
                     <div>
-                      <Label>Impuestos (%)</Label>
+                      <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                        <DollarSign className="h-3.5 w-3.5 text-gray-400" />
+                        Impuestos (%)
+                      </Label>
                       <Input
                         type="number"
                         value={formulario.impuestos}
@@ -556,49 +664,59 @@ export function PaginaCotizaciones() {
                         min="0"
                         max="100"
                         step="0.1"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
                       />
                     </div>
                     <div>
-                      <Label>Validez (días)</Label>
+                      <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5 text-gray-400" />
+                        Validez (días)
+                      </Label>
                       <Input
                         type="number"
                         value={formulario.validezDias}
                         onChange={(e) => setFormulario({ ...formulario, validezDias: Number.parseInt(e.target.value) })}
                         min="1"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
                       />
                     </div>
                   </div>
                 </div>
 
                 {formulario.items.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Resumen</h3>
-                    <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                      <DollarSign className="h-4 w-4 text-gray-600" />
+                      <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Resumen</h3>
+                    </div>
+                    <div className="space-y-3 p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-lg shadow-sm">
                       {(() => {
                         const totales = calcularTotales()
                         return (
                           <>
-                            <div className="flex justify-between">
-                              <span>Subtotal:</span>
-                              <span>€{totales.subtotal}</span>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Subtotal:</span>
+                              <span className="font-medium text-gray-900">€{totales.subtotal}</span>
                             </div>
                             {formulario.descuentoGlobal > 0 && (
-                              <div className="flex justify-between text-red-600">
-                                <span>Descuento ({formulario.descuentoGlobal}%):</span>
-                                <span>-€{totales.descuentoGlobal}</span>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-red-600">Descuento ({formulario.descuentoGlobal}%):</span>
+                                <span className="font-medium text-red-600">-€{totales.descuentoGlobal}</span>
                               </div>
                             )}
-                            <div className="flex justify-between">
-                              <span>Base Imponible:</span>
-                              <span>€{totales.baseImponible}</span>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Base Imponible:</span>
+                              <span className="font-medium text-gray-900">€{totales.baseImponible}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span>Impuestos ({formulario.impuestos}%):</span>
-                              <span>€{totales.impuestos}</span>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Impuestos ({formulario.impuestos}%):</span>
+                              <span className="font-medium text-gray-900">€{totales.impuestos}</span>
                             </div>
-                            <div className="flex justify-between font-bold text-lg border-t pt-2">
-                              <span>Total:</span>
-                              <span>€{totales.total}</span>
+                            <div className="border-t border-blue-200 pt-3 mt-2">
+                              <div className="flex justify-between items-center">
+                                <span className="font-bold text-lg text-gray-900">Total:</span>
+                                <span className="font-bold text-2xl text-blue-600">€{totales.total}</span>
+                              </div>
                             </div>
                           </>
                         )
@@ -609,35 +727,53 @@ export function PaginaCotizaciones() {
               </div>
 
               <div>
-                <Label>Notas</Label>
+                <Label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
+                  <FileText className="h-3.5 w-3.5 text-gray-400" />
+                  Notas
+                </Label>
                 <Textarea
                   value={formulario.notas}
                   onChange={(e) => setFormulario({ ...formulario, notas: e.target.value })}
-                  rows={3}
+                  rows={4}
                   placeholder="Notas adicionales para la cotización"
+                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[100px] resize-y"
                 />
               </div>
 
-            <div className="flex gap-2 pt-4">
+            </form>
+          </div>
+
+          {/* Footer con botones */}
+          <div className="p-6 border-t border-gray-200 bg-white sticky bottom-0">
+            <div className="flex gap-3">
               <Button 
-                type="submit" 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (formRef.current) {
+                    formRef.current.requestSubmit()
+                  }
+                }}
                 disabled={cargando || formulario.items.length === 0}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
               >
                 {cargando ? "Guardando..." : "Guardar Cotización"}
               </Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={resetearFormulario}
+                onClick={() => {
+                  setMostrarFormulario(false)
+                  resetearFormulario()
+                }}
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 Cancelar
               </Button>
             </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </div>
 
       {/* Lista de cotizaciones */}
       <div className="grid grid-cols-1 gap-4">

@@ -19,12 +19,15 @@ import { PaginaFacturacion } from "./pages/PaginaFacturacion"
 import PaginaUsuarios from "./pages/PaginaUsuarios"
 import PaginaConfiguracion from "./pages/PaginaConfiguracion"
 import PaginaMaestros from "./pages/PaginaMaestros"
+import SuperAdminLicencia from "./pages/SuperAdminLicencia"
 import { RutaDashboard } from "./components/RutaDashboard"
 import LayoutDashboard from "./components/LayoutDashboard"
+import { RouteLoader } from "./components/RouteLoader"
 
 function App() {
   return (
     <Router>
+      <RouteLoader />
       <ProveedorAuth>
         <ProveedorTienda>
           <Layout>
@@ -131,6 +134,18 @@ function App() {
                   <RutaProtegida>
                     <LayoutDashboard>
                       <PaginaConfiguracion />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
+
+              {/* Rutas de Super Admin */}
+              <Route
+                path="/super-admin/licencias"
+                element={
+                  <RutaProtegida rolRequerido="super_admin">
+                    <LayoutDashboard>
+                      <SuperAdminLicencia />
                     </LayoutDashboard>
                   </RutaProtegida>
                 }
