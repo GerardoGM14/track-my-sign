@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom"
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore"
 import { db } from "../lib/firebase"
 import { useContextoTienda } from "../contexts/ContextoTienda"
+import { useContextoAuth } from "../contexts/ContextoAuth"
 import {
   Plus,
   ArrowUpRight,
@@ -26,16 +27,26 @@ import { Badge } from "../components/ui/badge"
 import { NavLinkViewTransition } from "../components/NavLinkViewTransition"
 import { LoadingSpinner } from "../components/ui/loading-spinner"
 import nameSub from "../assets/subs/name_sub.svg"
-import TarjetaLicencia from "../components/TarjetaLicencia"
 
 export default function DashboardAdmin() {
   const { slugTienda } = useParams()
   const { tiendaActual } = useContextoTienda()
+  const { usuarioActual } = useContextoAuth()
   const [openMenus, setOpenMenus] = useState({})
   const [tooltip, setTooltip] = useState(null)
   const [productos, setProductos] = useState([])
   const [cargandoProductos, setCargandoProductos] = useState(false)
+  const [fechaActual, setFechaActual] = useState(new Date())
   const menuRefs = useRef({})
+
+  // Actualizar fecha en tiempo real
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setFechaActual(new Date())
+    }, 1000)
+
+    return () => clearInterval(intervalo)
+  }, [])
 
   // Cargar productos de Firebase
   useEffect(() => {
@@ -345,35 +356,61 @@ export default function DashboardAdmin() {
   }
 
   return (
-    <div className="space-y-6 min-h-full px-18">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">Gestión de Tienda</h1>
-          <p className="text-sm text-gray-600 mt-1 leading-tight">Bienvenido al Dashboard de TrackMySign</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-white">
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Cotización
-          </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-            <FileText className="mr-2 h-4 w-4" />
-            Reportes
-        </Button>
-        </div>
-      </div>
+    <div className="space-y-6 min-h-full px-18 pt-0">
+      {/* SVG Decorativos encima de los cards con texto superpuesto */}
+      {usuarioActual && (
+        <div className="relative mb-4 w-full">
+          <img 
+            src={nameSub} 
+            alt="Decoración nombre" 
+            className="h-[180px] md:h-[200px] lg:h-[220px] w-auto object-contain"
+            style={{ display: 'block', margin: 0, padding: 0, lineHeight: 0, flexShrink: 0 }}
+          />
+          
+          {/* Texto superpuesto sobre la imagen */}
+          <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-center pl-6 md:pl-8 text-white">
+            {/* Último inicio de sesión */}
+            <div className="mb-2">
+              <div className="inline-block bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs">
+                Último Inicio de Sesión: {fechaActual.toLocaleString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                })}
+              </div>
+            </div>
 
-      {/* SVG Decorativos encima de los cards */}
-      <div className="flex items-start justify-between gap-1 mb-4 w-full">
-        <img 
-          src={nameSub} 
-          alt="Decoración nombre" 
-          className="h-[180px] md:h-[200px] lg:h-[220px] w-auto object-contain"
-          style={{ display: 'block', margin: 0, padding: 0, lineHeight: 0, flexShrink: 0 }}
-        />
-        <TarjetaLicencia />
-      </div>
+            {/* Mensaje de bienvenida */}
+            <h2 className="text-xl md:text-2xl lg:text-3xl mb-2">
+              Bienvenido, <span className="font-normal">{usuarioActual.nombre || 'Administrador'}</span>
+            </h2>
+
+            {/* Información adicional */}
+            <div className="flex flex-col text-sm md:text-base">
+              <div className="mb-1">
+                <span className="font-semibold">Empresa:</span> <span className="font-normal">{usuarioActual.empresa || tiendaActual?.nombre || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="font-semibold">Email:</span> <span className="font-normal">{usuarioActual.email || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {!usuarioActual && (
+        <div className="flex items-start justify-between gap-1 mb-4 w-full">
+          <img 
+            src={nameSub} 
+            alt="Decoración nombre" 
+            className="h-[180px] md:h-[200px] lg:h-[220px] w-auto object-contain"
+            style={{ display: 'block', margin: 0, padding: 0, lineHeight: 0, flexShrink: 0 }}
+          />
+        </div>
+      )}
 
       {/* KPIs Cards (estilo dashlite exacto) */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

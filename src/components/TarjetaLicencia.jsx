@@ -6,6 +6,7 @@ import { db } from "../lib/firebase"
 import { useContextoTienda } from "../contexts/ContextoTienda"
 import { Button } from "./ui/button"
 import { HelpCircle } from "lucide-react"
+import houseSvg from "../assets/subs/house.svg"
 
 export default function TarjetaLicencia() {
   const { tiendaActual } = useContextoTienda()
@@ -62,64 +63,65 @@ export default function TarjetaLicencia() {
 
   if (cargando) {
     return (
-      <div className="h-[180px] md:h-[200px] lg:h-[220px] w-auto bg-gray-800 rounded-xl flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+      <div 
+        className="h-[180px] md:h-[200px] lg:h-[220px] w-auto rounded-xl flex items-center justify-center relative overflow-hidden"
+        style={{
+          backgroundColor: '#333332'
+        }}
+      >
+        <div className="relative z-10 animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
       </div>
     )
   }
 
   return (
-    <div className="h-[180px] md:h-[200px] lg:h-[220px] w-auto bg-gray-800 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
-      {/* Ilustración del edificio en la esquina inferior derecha */}
-      <div className="absolute bottom-2 right-2 w-20 h-20 opacity-80">
-        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Edificio principal */}
-          <rect x="20" y="30" width="50" height="50" fill="#FDEEB2" rx="2" />
-          {/* Ventanas superiores */}
-          <rect x="25" y="35" width="8" height="10" fill="#333332" rx="1" />
-          <rect x="37" y="35" width="8" height="10" fill="#333332" rx="1" />
-          <rect x="49" y="35" width="8" height="10" fill="#333332" rx="1" />
-          <rect x="61" y="35" width="8" height="10" fill="#333332" rx="1" />
-          {/* Puertas inferiores */}
-          <rect x="30" y="60" width="10" height="20" fill="#333332" rx="1" />
-          <rect x="50" y="60" width="10" height="20" fill="#333332" rx="1" />
-          {/* Techo */}
-          <path d="M15 30 L45 15 L75 30 L45 15 Z" fill="#F2D020" />
-          {/* Edificio secundario */}
-          <rect x="70" y="50" width="20" height="30" fill="#FDEEB2" rx="2" />
-          <path d="M65 50 L80 40 L95 50 L80 40 Z" fill="#F2D020" />
-        </svg>
-      </div>
+    <div 
+      className="h-[180px] md:h-[200px] lg:h-[220px] w-auto rounded-xl p-5 md:p-6 flex flex-col justify-between relative overflow-hidden"
+      style={{
+        backgroundColor: '#333332'
+      }}
+    >
+
+      {/* Imagen de la casa */}
+      <img 
+        src={houseSvg} 
+        alt="Casa decorativa" 
+        className="absolute h-auto w-auto opacity-80"
+        style={{ 
+          top: '45%',
+          left: '70%',
+          maxHeight: '150%',
+          maxWidth: '110%',
+          zIndex: 1
+        }}
+      />
 
       {/* Contenido */}
       <div className="relative z-10 flex flex-col h-full">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <p className="text-white text-xs mb-1">Su Licencia Actual:</p>
-            <h3 className="text-white text-lg font-bold">
-              <span className="text-yellow-400">{licencia.tipo}</span>
-            </h3>
-          </div>
-          <div className="bg-gray-700 text-white text-xs px-3 py-1 rounded-full">
+        {/* Header - Arriba de todo */}
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white text-xl font-bold">
+            Su Licencia Actual: <span className="text-yellow-400">{licencia.tipo}</span>
+          </h3>
+          <div className="bg-gray-700 text-white text-sm px-3 py-1 rounded-full">
             {licencia.periodo}
           </div>
         </div>
 
         {/* Fechas */}
-        <div className="text-gray-400 text-xs mb-3">
+        <div className="text-gray-400 text-sm mb-3">
           <span>Inicio: {licencia.fechaInicio}</span>{" "}
           <span className="ml-2">Fin: {licencia.fechaFin}</span>
         </div>
 
-        {/* Días restantes */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-white text-sm">Días Restantes</span>
-            <span className="text-gray-400 text-sm">{licencia.diasRestantes} días</span>
+        {/* Días restantes - Debajo de Inicio y Fin */}
+        <div className="mb-1.5">
+          <div className="flex items-center mb-1.5" style={{ width: '65%' }}>
+            <span className="text-white text-base font-semibold">Días Restantes</span>
+            <span className="text-white text-base font-semibold ml-auto">{licencia.diasRestantes} días</span>
           </div>
-          {/* Barra de progreso */}
-          <div className="w-full bg-gray-700 rounded-full h-2">
+          {/* Barra de progreso - Acortada desde la derecha */}
+          <div className="bg-gray-700 rounded-full h-2" style={{ width: '65%' }}>
             <div
               className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
               style={{ width: `${calcularPorcentaje()}%` }}
@@ -128,18 +130,18 @@ export default function TarjetaLicencia() {
         </div>
 
         {/* Botones */}
-        <div className="flex gap-2 mt-auto">
+        <div className="flex gap-2 mt-4" style={{ width: '65%' }}>
           <Button
             variant="outline"
             size="sm"
-            className="bg-white text-gray-800 hover:bg-gray-100 text-xs h-7 px-3"
+            className="bg-white text-gray-800 hover:bg-gray-100 text-xs h-7 px-3 flex-1"
           >
             Cambiar Plan
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="bg-gray-700 text-white hover:bg-gray-600 border-gray-600 text-xs h-7 px-3"
+            className="bg-gray-700 text-white hover:bg-gray-600 border-gray-600 text-xs h-7 px-3 flex-1"
           >
             <HelpCircle className="h-3 w-3 mr-1" />
             Soporte

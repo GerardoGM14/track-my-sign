@@ -143,11 +143,9 @@ function App() {
               <Route
                 path="/super-admin/licencias"
                 element={
-                  <RutaProtegida rolRequerido="super_admin">
-                    <LayoutDashboard>
-                      <SuperAdminLicencia />
-                    </LayoutDashboard>
-                  </RutaProtegida>
+                  <LayoutDashboard>
+                    <SuperAdminLicencia />
+                  </LayoutDashboard>
                 }
               />
 

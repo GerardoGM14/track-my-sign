@@ -302,15 +302,16 @@ export function PaginaLogin() {
 
               {/* Botón de acceso a Super Admin */}
               <div className="mt-4">
-                <Button
-                  type="button"
-                  onClick={() => navigate("/super-admin/licencias")}
-                  variant="outline"
-                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center"
-                >
-                  <span className="mr-2">🛡️</span>
-                  Acceder a Super Admin
-                </Button>
+                <NavLinkViewTransition to="/super-admin/licencias">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center"
+                  >
+                    <span className="mr-2">🛡️</span>
+                    Acceder a Super Admin
+                  </Button>
+                </NavLinkViewTransition>
               </div>
 
               {pasoActual === 1 && (
