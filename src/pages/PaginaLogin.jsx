@@ -21,7 +21,7 @@ export function PaginaLogin() {
   const [pasoActual, setPasoActual] = useState(1) // 1 = email, 2 = password
   const [animacionKey, setAnimacionKey] = useState(0) // Para forzar re-animación
 
-  const { iniciarSesion, iniciarSesionConGoogle, iniciarSesionMock, iniciarSesionMockCustomer, usuarioActual } = useContextoAuth()
+  const { iniciarSesion, iniciarSesionConGoogle, iniciarSesionMock, iniciarSesionMockCustomer, iniciarSesionMockSuperAdmin, usuarioActual } = useContextoAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -81,7 +81,7 @@ export function PaginaLogin() {
   const redirigirSegunRol = (usuario = null) => {
     const usuarioARedirigir = usuario || usuarioActual
     if (usuarioARedirigir?.rol === "superadmin") {
-      navigate("/superadmin/dashboard")
+      navigate("/super-admin/dashboard")
     } else if (usuarioARedirigir?.rol === "admin" && usuarioARedirigir?.tiendaId) {
       navigate(`/${usuarioARedirigir.tiendaId}`)
     } else if (usuarioARedirigir?.rol === "admin" && !usuarioARedirigir?.tiendaId) {
@@ -136,6 +136,25 @@ export function PaginaLogin() {
       redirigirSegunRol(usuarioMockeado)
     } catch (error) {
       setError(error.message || "Error al iniciar sesión mock customer")
+      setCargando(false)
+    }
+  }
+
+  const manejarLoginMockSuperAdmin = async () => {
+    setCargando(true)
+    setError("")
+    try {
+      await iniciarSesionMockSuperAdmin()
+      const usuarioMockeado = {
+        id: "mock-superadmin-uid",
+        email: "superadmin@trackmysign.com",
+        nombre: "Super Admin Mock",
+        rol: "superadmin",
+        tiendaId: null,
+      }
+      redirigirSegunRol(usuarioMockeado)
+    } catch (error) {
+      setError(error.message || "Error al iniciar sesión mock superadmin")
       setCargando(false)
     }
   }
@@ -302,16 +321,16 @@ export function PaginaLogin() {
 
               {/* Botón de acceso a Super Admin */}
               <div className="mt-4">
-                <NavLinkViewTransition to="/super-admin/licencias">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center"
-                  >
-                    <span className="mr-2">🛡️</span>
-                    Acceder a Super Admin
-                  </Button>
-                </NavLinkViewTransition>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={manejarLoginMockSuperAdmin}
+                  className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2.5 px-4 rounded-md transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center"
+                  disabled={cargando}
+                >
+                  <span className="mr-2">🛡️</span>
+                  Acceder a Super Admin (Mock)
+                </Button>
               </div>
 
               {pasoActual === 1 && (

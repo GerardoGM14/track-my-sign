@@ -31,9 +31,9 @@ export default function SidebarTienda({ onClose }) {
     const elementosBase = [
       {
         titulo: "Dashboard",
-        url: `/${slugTienda}`,
+        url: usuario?.rol === "superadmin" ? "/super-admin/dashboard" : `/${slugTienda}`,
         icono: LayoutDashboard,
-        roles: ["admin", "employee", "customer"],
+        roles: ["admin", "employee", "customer", "superadmin"],
       },
     ]
 
@@ -273,6 +273,7 @@ export default function SidebarTienda({ onClose }) {
                   <NavLinkViewTransition
                     key={item.titulo}
                     to={item.url}
+                    onClick={onClose}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors leading-tight ${
                       estaActivo
                         ? "bg-[#2D3748] text-white shadow-sm"

@@ -19,7 +19,12 @@ import { PaginaFacturacion } from "./pages/PaginaFacturacion"
 import PaginaUsuarios from "./pages/PaginaUsuarios"
 import PaginaConfiguracion from "./pages/PaginaConfiguracion"
 import PaginaMaestros from "./pages/PaginaMaestros"
+import PaginaPerfil from "./pages/PaginaPerfil"
 import SuperAdminLicencia from "./pages/SuperAdminLicencia"
+import DashboardSuperAdmin from "./pages/DashboardSuperAdmin"
+import PaginaGestionTiendas from "./pages/PaginaGestionTiendas"
+import PaginaAnalyticsGlobal from "./pages/PaginaAnalyticsGlobal"
+import PaginaAdministracion from "./pages/PaginaAdministracion"
 import { RutaDashboard } from "./components/RutaDashboard"
 import LayoutDashboard from "./components/LayoutDashboard"
 import { RouteLoader } from "./components/RouteLoader"
@@ -140,6 +145,46 @@ function App() {
               />
 
               {/* Rutas de Super Admin */}
+              <Route
+                path="/super-admin/dashboard"
+                element={
+                  <RutaProtegida rolRequerido="superadmin">
+                    <LayoutDashboard>
+                      <DashboardSuperAdmin />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/super-admin/tiendas"
+                element={
+                  <RutaProtegida rolRequerido="superadmin">
+                    <LayoutDashboard>
+                      <PaginaGestionTiendas />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/super-admin/analytics"
+                element={
+                  <RutaProtegida rolRequerido="superadmin">
+                    <LayoutDashboard>
+                      <PaginaAnalyticsGlobal />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
+              <Route
+                path="/super-admin/admin"
+                element={
+                  <RutaProtegida rolRequerido="superadmin">
+                    <LayoutDashboard>
+                      <PaginaAdministracion />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
               <Route
                 path="/super-admin/licencias"
                 element={

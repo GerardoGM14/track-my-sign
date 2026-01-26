@@ -11,7 +11,7 @@ export function RutaProtegida({ children, rolRequerido }) {
 
   if (rolRequerido && usuarioActual.rol !== rolRequerido) {
     // Verificar jerarquía de roles
-    const jerarquiaRoles = ["cliente", "empleado", "admin", "super_admin"]
+    const jerarquiaRoles = ["cliente", "empleado", "admin", "superadmin"]
     const indiceRolUsuario = jerarquiaRoles.indexOf(usuarioActual.rol)
     const indiceRolRequerido = jerarquiaRoles.indexOf(rolRequerido)
 

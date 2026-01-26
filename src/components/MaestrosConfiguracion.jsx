@@ -463,6 +463,7 @@ export function MaestrosConfiguracion() {
     const menuRefs = useRef({})
     const [busqueda, setBusqueda] = useState("")
     const [ordenamiento, setOrdenamiento] = useState({ campo: null, direccion: 'asc' }) // 'asc' o 'desc'
+    const [sidebarAbierto, setSidebarAbierto] = useState(false)
     const inputRefs = useRef({})
 
     // Handler de cambio optimizado para evitar pérdida de foco
@@ -548,6 +549,30 @@ export function MaestrosConfiguracion() {
       }
     }
 
+    const cerrarSidebar = () => {
+      setSidebarAbierto(false)
+      setEditando(null)
+      setForm(Object.keys(form).reduce((acc, key) => ({ ...acc, [key]: "" }), {}))
+    }
+
+    const abrirSidebarNuevo = () => {
+      setEditando(null)
+      setForm(Object.keys(form).reduce((acc, key) => ({ ...acc, [key]: "" }), {}))
+      setSidebarAbierto(true)
+    }
+
+    const abrirSidebarEditar = (item) => {
+      setEditando(item)
+      setForm(item)
+      setSidebarAbierto(true)
+      setMenuAbierto(null)
+    }
+
+    const manejarGuardar = async () => {
+      await onGuardar()
+      cerrarSidebar()
+    }
+
     return (
       <div className="border border-gray-200 rounded-lg bg-white">
         <button
@@ -572,102 +597,30 @@ export function MaestrosConfiguracion() {
 
         {mostrarSeccion && (
           <div className="p-4 border-t border-gray-200 space-y-4">
-            {/* Formulario */}
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3 border-0">
-              <div className="flex items-center justify-between mb-2">
-                <h5 className="text-sm font-semibold text-gray-900">
-                  {editando ? `Editar ${titulo}` : `Nuevo ${titulo}`}
-                </h5>
-                {editando && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditando(null)
-                      setForm(Object.keys(form).reduce((acc, key) => ({ ...acc, [key]: "" }), {}))
-                    }}
-                    className="h-7 text-xs border-gray-300 text-gray-700 hover:bg-gray-50"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Cancelar
-                  </Button>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {campos.map((campo) => (
-                  <div key={campo.name}>
-                    <Label className="text-xs font-medium text-gray-700">{campo.label}</Label>
-                    {campo.type === "select" ? (
-                      <Select
-                        value={form[campo.name] || ""}
-                        onValueChange={(value) => handleInputChange(campo.name, value)}
-                      >
-                        <SelectTrigger className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                          <SelectValue placeholder={campo.placeholder}>
-                            {campo.name === "categoria" && categoriasDisponibles.length > 0
-                              ? categoriasDisponibles.find(c => c.nombre === form[campo.name])?.nombre || form[campo.name] || ""
-                              : form[campo.name] || ""}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {campo.name === "categoria" && categoriasDisponibles.length > 0
-                            ? categoriasDisponibles.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.nombre}>
-                                  {cat.nombre}
-                                </SelectItem>
-                              ))
-                            : campo.options?.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input
-                        key={`input-${campo.name}-${editando?.id || 'new'}`}
-                        type={campo.type || "text"}
-                        value={form[campo.name] || ""}
-                        onChange={(e) => {
-                          e.persist()
-                          handleInputChange(campo.name, e.target.value)
-                        }}
-                        placeholder={campo.placeholder}
-                        className="h-9 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-              
-              <Button
-                type="button"
-                onClick={onGuardar}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white h-9"
-              >
-                <Save className="w-3 h-3 mr-1" />
-                {editando ? "Actualizar" : "Agregar"}
-              </Button>
-            </div>
-
-            {/* Barra de búsqueda - solo para Subcategorías */}
-            {titulo === "Subcategorías" && items.length > 0 && (
-              <div className="mb-4">
-                <div className="relative">
+            <div className="flex justify-between items-center mb-4">
+               {/* Barra de búsqueda - solo para Subcategorías */}
+               {titulo === "Subcategorías" && items.length > 0 ? (
+                <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     type="text"
                     placeholder="Buscar por nombre o categoría..."
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
-                    className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10"
+                    className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-9"
                   />
                 </div>
-              </div>
-            )}
+              ) : <div></div>}
+
+              <Button
+                onClick={abrirSidebarNuevo}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white ml-4"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo {titulo.slice(0, -1)} {/* Intento simple de singularizar */}
+              </Button>
+            </div>
 
             {/* Tabla de items */}
             <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -677,7 +630,7 @@ export function MaestrosConfiguracion() {
                     <Icono className="w-6 h-6 text-gray-400" />
                   </div>
                   <p className="text-sm text-gray-500">No hay registros</p>
-                  <p className="text-xs text-gray-400 mt-1">Agrega tu primer {titulo.toLowerCase()} usando el formulario de arriba</p>
+                  <p className="text-xs text-gray-400 mt-1">Agrega tu primer registro usando el botón superior</p>
                 </div>
               ) : itemsFiltradosYOrdenados.length === 0 ? (
                 <div className="text-center py-12 bg-white">
@@ -876,9 +829,7 @@ export function MaestrosConfiguracion() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      setEditando(item)
-                                      setForm(item)
-                                      setMenuAbierto(null)
+                                      abrirSidebarEditar(item)
                                     }}
                                     onMouseDown={(e) => e.preventDefault()}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors focus:outline-none focus:ring-0"
@@ -912,6 +863,128 @@ export function MaestrosConfiguracion() {
             </div>
           </div>
         )}
+
+        {/* Overlay oscuro cuando el sidebar está abierto */}
+        {sidebarAbierto && (
+          <div 
+            className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+            style={{ 
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              margin: 0,
+              padding: 0
+            }}
+            onClick={cerrarSidebar}
+          />
+        )}
+
+        {/* Sidebar */}
+        <div
+          className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[101] transform transition-transform duration-300 ease-in-out ${
+            sidebarAbierto ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          {/* Header del Sidebar */}
+          <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Icono className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {editando ? `Editar ${titulo.slice(0, -1)}` : `Nuevo ${titulo.slice(0, -1)}`}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {editando ? "Modifica la información del registro" : "Completa la información para crear un nuevo registro"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={cerrarSidebar}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          {/* Contenido del Formulario */}
+          <div className="p-6 overflow-y-auto h-[calc(100%-88px)]">
+            <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                {campos.map((campo) => (
+                  <div key={campo.name}>
+                    <Label className="text-sm font-medium text-gray-700 mb-1.5 block">{campo.label}</Label>
+                    {campo.type === "select" ? (
+                      <Select
+                        value={form[campo.name] || ""}
+                        onValueChange={(value) => handleInputChange(campo.name, value)}
+                      >
+                        <SelectTrigger className="h-10 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500 w-full">
+                          <SelectValue placeholder={campo.placeholder}>
+                            {campo.name === "categoria" && categoriasDisponibles.length > 0
+                              ? categoriasDisponibles.find(c => c.nombre === form[campo.name])?.nombre || form[campo.name] || ""
+                              : form[campo.name] || ""}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {campo.name === "categoria" && categoriasDisponibles.length > 0
+                            ? categoriasDisponibles.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.nombre}>
+                                  {cat.nombre}
+                                </SelectItem>
+                              ))
+                            : campo.options?.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        key={`input-${campo.name}-${editando?.id || 'new'}`}
+                        type={campo.type || "text"}
+                        value={form[campo.name] || ""}
+                        onChange={(e) => {
+                          e.persist()
+                          handleInputChange(campo.name, e.target.value)
+                        }}
+                        placeholder={campo.placeholder}
+                        className="h-10 text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="pt-4 flex justify-end gap-3">
+                 <Button
+                    type="button"
+                    variant="outline"
+                    onClick={cerrarSidebar}
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={manejarGuardar}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {editando ? "Actualizar" : "Guardar"}
+                  </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

@@ -232,17 +232,19 @@ export default function LayoutDashboard({ children }) {
                     </div>
                   </div>
                   <div className="py-1">
-                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors">
+                    <button 
+                      onClick={() => slugTienda && navigate(`/${slugTienda}/perfil`)}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors"
+                    >
                       <User className="h-4 w-4 text-gray-500" />
                       Ver Perfil
                     </button>
-                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors">
+                    <button 
+                      onClick={() => slugTienda && navigate(`/${slugTienda}/configuracion`)}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors"
+                    >
                       <Settings className="h-4 w-4 text-gray-500" />
                       Configuración
-                    </button>
-                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors">
-                      <Activity className="h-4 w-4 text-gray-500" />
-                      Actividad
                     </button>
                   </div>
                   <div className="border-t border-gray-200 py-1">

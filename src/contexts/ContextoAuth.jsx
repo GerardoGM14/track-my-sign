@@ -149,6 +149,32 @@ export function ProveedorAuth({ children }) {
     return Promise.resolve({ user: usuarioFirebaseMock })
   }
 
+  // Función para iniciar sesión con usuario superadmin mockeado (solo desarrollo)
+  const iniciarSesionMockSuperAdmin = async () => {
+    const usuarioMockeado = {
+      id: "mock-superadmin-uid",
+      email: "superadmin@trackmysign.com",
+      nombre: "Super Admin Mock",
+      rol: "superadmin",
+      tiendaId: null,
+      planId: "enterprise",
+      fechaCreacion: new Date(),
+      fechaActualizacion: new Date(),
+      configuracionCompleta: true,
+    }
+
+    // Simular usuario de Firebase mockeado
+    const usuarioFirebaseMock = {
+      uid: "mock-superadmin-uid",
+      email: "superadmin@trackmysign.com",
+      displayName: "Super Admin Mock",
+    }
+
+    setUsuarioActual(usuarioMockeado)
+    setUsuarioFirebase(usuarioFirebaseMock)
+    return Promise.resolve({ user: usuarioFirebaseMock })
+  }
+
   const tienePermiso = (permisoRequerido) => {
     if (!usuarioActual) return false
 
@@ -195,6 +221,7 @@ export function ProveedorAuth({ children }) {
     usuario: usuarioActual,
     iniciarSesionMock, // Añadir la función mock al contexto
     iniciarSesionMockCustomer, // Añadir la función mock customer al contexto
+    iniciarSesionMockSuperAdmin, // Añadir la función mock superadmin al contexto
   }
 
   return <ContextoAuth.Provider value={valor}>{!cargando && children}</ContextoAuth.Provider>

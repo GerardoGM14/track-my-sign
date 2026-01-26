@@ -132,36 +132,97 @@ export default function DashboardAdmin() {
 
   const topProductos = calcularTopProductos()
 
+  const [kpiData, setKpiData] = useState({
+    cotizacionesPendientes: 0,
+    ordenesProduccion: 0,
+    facturasPendientes: 0,
+    ventasMes: 0,
+    cambioCotizaciones: 0,
+    cambioOrdenes: 0,
+    cambioFacturas: 0,
+    cambioVentas: 0
+  })
+
+  // Cargar datos reales para KPIs
+  useEffect(() => {
+    const cargarKPIs = async () => {
+      try {
+        if (!tiendaActual) return
+
+        // 1. Cotizaciones
+        const cotizacionesRef = collection(db, "tiendas", tiendaActual.id, "cotizaciones")
+        const cotizacionesSnap = await getDocs(cotizacionesRef)
+        const cotizaciones = cotizacionesSnap.docs.map(d => d.data())
+        const cotizacionesPendientes = cotizaciones.filter(c => c.estado === 'pendiente').length
+
+        // 2. Órdenes
+        const ordenesRef = collection(db, "tiendas", tiendaActual.id, "ordenes")
+        const ordenesSnap = await getDocs(ordenesRef)
+        const ordenes = ordenesSnap.docs.map(d => d.data())
+        const ordenesProduccion = ordenes.filter(o => o.estado === 'en_progreso').length
+
+        // 3. Facturas
+        const facturasRef = collection(db, "tiendas", tiendaActual.id, "facturas")
+        const facturasSnap = await getDocs(facturasRef)
+        const facturas = facturasSnap.docs.map(d => d.data())
+        const facturasPendientes = facturas.filter(f => f.estado === 'pendiente').length
+
+        // 4. Ventas del Mes
+        const ahora = new Date()
+        const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
+        const ventasMes = facturas
+          .filter(f => f.estado === 'pagado' && f.fechaPago && new Date(f.fechaPago.seconds * 1000) >= inicioMes)
+          .reduce((sum, f) => sum + (f.total || 0), 0)
+
+        setKpiData({
+          cotizacionesPendientes,
+          ordenesProduccion,
+          facturasPendientes,
+          ventasMes,
+          cambioCotizaciones: 5.2, // Simulado por ahora (requeriría histórico)
+          cambioOrdenes: 12.5,
+          cambioFacturas: -2.1,
+          cambioVentas: 8.4
+        })
+
+      } catch (error) {
+        console.error("Error cargando KPIs:", error)
+      }
+    }
+
+    cargarKPIs()
+  }, [tiendaActual])
+
   // KPIs adaptados al negocio de imprentas y rotulación
   const kpis = [
     {
       titulo: "Cotizaciones Pendientes",
-      valor: "24",
-      cambio: "8.2",
+      valor: kpiData.cotizacionesPendientes.toString(),
+      cambio: kpiData.cambioCotizaciones.toString(),
       bgColor: "rgb(115, 58, 234)",
       graficoColor: "#733AEA",
       tipoGrafico: "linea",
     },
     {
       titulo: "Órdenes en Producción",
-      valor: "18",
-      cambio: "15.3",
+      valor: kpiData.ordenesProduccion.toString(),
+      cambio: kpiData.cambioOrdenes.toString(),
       bgColor: "rgb(5, 142, 252)",
       graficoColor: "#058EFC",
       tipoGrafico: "linea",
     },
     {
       titulo: "Facturas Pendientes",
-      valor: "12",
-      cambio: "-5.1",
+      valor: kpiData.facturasPendientes.toString(),
+      cambio: kpiData.cambioFacturas.toString(),
       bgColor: "rgb(253, 151, 34)",
       graficoColor: "#FD9722",
       tipoGrafico: "barras",
     },
     {
       titulo: "Ventas del Mes",
-      valor: "$45.2K",
-      cambio: "22.8",
+      valor: `€${(kpiData.ventasMes / 1000).toFixed(1)}K`,
+      cambio: kpiData.cambioVentas.toString(),
       bgColor: "rgb(242, 66, 110)",
       graficoColor: "#F2426E",
       tipoGrafico: "linea",

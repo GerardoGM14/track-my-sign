@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, doc } from "firebase/firestore"
+import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, doc, getDoc } from "firebase/firestore"
 import { db } from "../lib/firebase"
 import { useContextoAuth } from "../contexts/ContextoAuth"
 import { useContextoTienda } from "../contexts/ContextoTienda"
@@ -35,6 +35,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Receipt,
+  X,
 } from "lucide-react"
 import { toast } from "../hooks/user-toast"
 import { LoadingSpinner } from "../components/ui/loading-spinner"
@@ -88,12 +89,11 @@ export function PaginaFacturacion() {
 
   const cargarConfiguracionStripe = async () => {
     try {
-      const configRef = collection(db, "tiendas", tiendaActual.id, "configuracion")
-      const configQuery = query(configRef, where("tipo", "==", "stripe"))
-      const configSnapshot = await getDocs(configQuery)
+      const stripeRef = doc(db, "tiendas", tiendaActual.id, "configuracion", "stripe")
+      const stripeSnap = await getDoc(stripeRef)
 
-      if (!configSnapshot.empty) {
-        const configData = configSnapshot.docs[0].data()
+      if (stripeSnap.exists()) {
+        const configData = stripeSnap.data()
         setConfiguracionStripe(configData)
       }
     } catch (error) {
@@ -268,9 +268,118 @@ export function PaginaFacturacion() {
   }
 
   const generarPDF = (factura) => {
-    // Aquí iría la generación real del PDF
-    console.log("Generando PDF para factura:", factura.numeroFactura)
-    alert("PDF generado (funcionalidad simulada)")
+    const ventanaImpresion = window.open('', '_blank')
+    if (!ventanaImpresion) {
+      alert("Por favor permite las ventanas emergentes para generar la factura.")
+      return
+    }
+
+    const contenidoHTML = `
+      <html>
+        <head>
+          <title>Factura ${factura.numeroFactura}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #333; }
+            .header { display: flex; justify-content: space-between; margin-bottom: 40px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+            .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
+            .info-empresa { margin-top: 10px; font-size: 14px; color: #666; }
+            .info-factura { text-align: right; }
+            .info-factura h1 { margin: 0; color: #111; font-size: 32px; letter-spacing: 1px; }
+            .detalles-factura { margin-top: 10px; font-size: 14px; }
+            .seccion-cliente { margin-bottom: 40px; }
+            .titulo-seccion { font-size: 12px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 5px; }
+            .tabla { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 30px; }
+            .tabla th { background-color: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600; font-size: 14px; }
+            .tabla td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+            .text-right { text-align: right; }
+            .totales { display: flex; justify-content: flex-end; }
+            .tabla-totales { width: 300px; }
+            .tabla-totales td { padding: 8px 0; border-bottom: 1px solid #eee; }
+            .tabla-totales .total-final { font-size: 18px; font-weight: bold; color: #111; border-top: 2px solid #333; border-bottom: none; padding-top: 15px; }
+            .footer { margin-top: 60px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="logo">${tiendaActual.nombre}</div>
+              <div class="info-empresa">
+                <p>Servicios de Imprenta y Rotulación</p>
+              </div>
+            </div>
+            <div class="info-factura">
+              <h1>FACTURA</h1>
+              <div class="detalles-factura">
+                <p><strong>Número:</strong> ${factura.numeroFactura}</p>
+                <p><strong>Fecha:</strong> ${new Date(factura.fechaCreacion.seconds * 1000).toLocaleDateString()}</p>
+                <p><strong>Vencimiento:</strong> ${factura.fechaVencimiento ? new Date(factura.fechaVencimiento.seconds * 1000).toLocaleDateString() : 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="seccion-cliente">
+            <div class="titulo-seccion">Facturar a:</div>
+            <p style="font-weight: bold; font-size: 16px; margin: 0 0 5px 0;">${factura.cliente?.nombre || 'Cliente General'}</p>
+            <p style="margin: 0;">${factura.cliente?.empresa ? factura.cliente.empresa + '<br>' : ''}</p>
+            <p style="margin: 0;">${factura.cliente?.email || ''}</p>
+            <p style="margin: 0;">${factura.cliente?.telefono || ''}</p>
+          </div>
+
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Descripción</th>
+                <th class="text-right">Cantidad</th>
+                <th class="text-right">Precio Unitario</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${factura.items.map(item => `
+                <tr>
+                  <td>
+                    <strong>${item.nombre || 'Item'}</strong>
+                    ${item.descripcion ? `<br><span style="color: #666; font-size: 12px;">${item.descripcion}</span>` : ''}
+                  </td>
+                  <td class="text-right">${item.cantidad}</td>
+                  <td class="text-right">€${Number(item.precioUnitario).toFixed(2)}</td>
+                  <td class="text-right">€${Number(item.total).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="totales">
+            <table class="tabla-totales">
+              <tr>
+                <td>Subtotal</td>
+                <td class="text-right">€${Number(factura.subtotal).toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td>Impuestos (IVA)</td>
+                <td class="text-right">€${Number(factura.impuestos).toFixed(2)}</td>
+              </tr>
+              <tr class="total-final">
+                <td class="total-final">Total</td>
+                <td class="total-final text-right">€${Number(factura.total).toFixed(2)}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="footer">
+            <p>Gracias por su preferencia.</p>
+            <p>${tiendaActual.nombre} - Sistema de Gestión TrackMySign</p>
+          </div>
+
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `
+    
+    ventanaImpresion.document.write(contenidoHTML)
+    ventanaImpresion.document.close()
   }
 
   const enviarFactura = async (facturaId) => {
@@ -321,80 +430,7 @@ export function PaginaFacturacion() {
           Nueva Factura
         </Button>
         
-        <Dialog open={mostrarNuevaFactura} onOpenChange={setMostrarNuevaFactura}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Crear Nueva Factura</DialogTitle>
-              <DialogDescription>Selecciona una orden completada para generar la factura</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="orden">Orden</Label>
-                <Select
-                  value={nuevaFactura.ordenId}
-                  onValueChange={(value) => setNuevaFactura((prev) => ({ ...prev, ordenId: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar orden completada" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ordenes
-                      .filter((o) => !o.facturado)
-                      .map((orden) => (
-                        <SelectItem key={orden.id} value={orden.id}>
-                          {orden.numero} - {orden.cliente?.nombre} - €{orden.totales?.total}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="fechaVencimiento">Fecha de Vencimiento</Label>
-                <Input
-                  id="fechaVencimiento"
-                  type="date"
-                  value={nuevaFactura.fechaVencimiento}
-                  onChange={(e) =>
-                    setNuevaFactura((prev) => ({
-                      ...prev,
-                      fechaVencimiento: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="notas">Notas</Label>
-                <Textarea
-                  id="notas"
-                  placeholder="Notas adicionales para la factura"
-                  value={nuevaFactura.notas}
-                  onChange={(e) =>
-                    setNuevaFactura((prev) => ({
-                      ...prev,
-                      notas: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setMostrarNuevaFactura(false)}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={crearFactura} 
-                  disabled={!nuevaFactura.ordenId}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Crear Factura
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+
       </div>
 
       {/* Estadísticas */}
@@ -688,6 +724,136 @@ export function PaginaFacturacion() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Overlay oscuro */}
+      {mostrarNuevaFactura && (
+        <div 
+          className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            margin: 0,
+            padding: 0
+          }}
+          onClick={() => setMostrarNuevaFactura(false)}
+        />
+      )}
+
+      {/* Sidebar Nueva Factura */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[101] transform transition-transform duration-300 ease-in-out ${
+          mostrarNuevaFactura ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="h-full flex flex-col bg-gray-50">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Receipt className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Nueva Factura</h2>
+                  <p className="text-sm text-gray-500">Genera una factura desde una orden</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMostrarNuevaFactura(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="orden" className="text-sm font-medium text-gray-700">Orden</Label>
+                <Select
+                  value={nuevaFactura.ordenId}
+                  onValueChange={(value) => setNuevaFactura((prev) => ({ ...prev, ordenId: value }))}
+                >
+                  <SelectTrigger className="mt-1 bg-white">
+                    <SelectValue placeholder="Seleccionar orden completada" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ordenes
+                      .filter((o) => !o.facturado)
+                      .map((orden) => (
+                        <SelectItem key={orden.id} value={orden.id}>
+                          {orden.numero} - {orden.cliente?.nombre} - €{orden.totales?.total}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {ordenes.filter((o) => !o.facturado).length === 0 && (
+                  <p className="text-xs text-orange-600 mt-1">No hay órdenes pendientes de facturar</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="fechaVencimiento" className="text-sm font-medium text-gray-700">Fecha de Vencimiento</Label>
+                <Input
+                  id="fechaVencimiento"
+                  type="date"
+                  className="mt-1 bg-white"
+                  value={nuevaFactura.fechaVencimiento}
+                  onChange={(e) =>
+                    setNuevaFactura((prev) => ({
+                      ...prev,
+                      fechaVencimiento: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="notas" className="text-sm font-medium text-gray-700">Notas</Label>
+                <Textarea
+                  id="notas"
+                  placeholder="Notas adicionales para la factura"
+                  className="mt-1 bg-white min-h-[100px]"
+                  value={nuevaFactura.notas}
+                  onChange={(e) =>
+                    setNuevaFactura((prev) => ({
+                      ...prev,
+                      notas: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-gray-200 bg-white sticky bottom-0">
+            <div className="flex gap-3">
+              <Button 
+                onClick={crearFactura} 
+                disabled={!nuevaFactura.ordenId}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
+              >
+                Crear Factura
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setMostrarNuevaFactura(false)}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Modal de detalle de factura */}
       {facturaSeleccionada && (

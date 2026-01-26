@@ -4,23 +4,16 @@ import { useState, useEffect } from "react"
 import { useAuth } from "../contexts/ContextoAuth"
 import { useTienda } from "../contexts/ContextoTienda"
 import { collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc } from "firebase/firestore"
-import { createUserWithEmailAndPassword } from "firebase/auth"
-import { db, auth } from "../lib/firebase"
+import { createUserWithEmailAndPassword, getAuth, signOut } from "firebase/auth"
+import { initializeApp, getApp, getApps, deleteApp } from "firebase/app"
+import { db, auth, firebaseConfig } from "../lib/firebase"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../components/ui/dialog"
 import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { Trash2, Edit, Plus, Users, Mail, Phone, Calendar } from "lucide-react"
+import { Trash2, Edit, Plus, Users, Mail, Phone, Calendar, X, HelpCircle, CheckCircle } from "lucide-react"
 import { toast } from "../hooks/user-toast.js"
 
 export default function PaginaUsuarios() {
@@ -83,25 +76,43 @@ export default function PaginaUsuarios() {
           description: "Los datos del usuario se han actualizado correctamente",
         })
       } else {
-        // Crear nuevo usuario
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
+        // Crear nuevo usuario usando una app secundaria para no desloguear al admin
+        let secondaryApp
+        try {
+            // Inicializar app secundaria con un nombre único
+            const appName = `secondaryApp-${Date.now()}`
+            secondaryApp = initializeApp(firebaseConfig, appName)
+            const secondaryAuth = getAuth(secondaryApp)
 
-        await addDoc(collection(db, "usuarios"), {
-          uid: userCredential.user.uid,
-          nombre: formData.nombre,
-          email: formData.email,
-          telefono: formData.telefono,
-          rol: formData.rol,
-          tiendaId: tiendaActual.id,
-          creadoPor: usuario.uid,
-          fechaCreacion: new Date(),
-          activo: true,
-        })
+            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, formData.email, formData.password)
+            
+            // Cerrar sesión en la app secundaria inmediatamente
+            await signOut(secondaryAuth)
 
-        toast({
-          title: "Usuario creado",
-          description: `${formData.rol === "employee" ? "Empleado" : "Cliente"} creado exitosamente`,
-        })
+            await addDoc(collection(db, "usuarios"), {
+              uid: userCredential.user.uid,
+              nombre: formData.nombre,
+              email: formData.email,
+              telefono: formData.telefono,
+              rol: formData.rol,
+              tiendaId: tiendaActual.id,
+              creadoPor: usuario.uid,
+              fechaCreacion: new Date(),
+              activo: true,
+            })
+
+            toast({
+              title: "Usuario creado",
+              description: `${formData.rol === "employee" ? "Empleado" : "Cliente"} creado exitosamente`,
+            })
+        } catch (authError) {
+             console.error("Error en auth secundaria:", authError)
+             throw authError
+        } finally {
+            if (secondaryApp) {
+                await deleteApp(secondaryApp)
+            }
+        }
       }
 
       setModalAbierto(false)
@@ -208,94 +219,6 @@ export default function PaginaUsuarios() {
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Usuario
         </Button>
-        
-        <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{usuarioEditando ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
-              <DialogDescription>
-                {usuarioEditando
-                  ? "Modifica los datos del usuario seleccionado"
-                  : "Completa los datos para crear un nuevo usuario"}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={manejarSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="nombre">Nombre Completo</Label>
-                <Input
-                  id="nombre"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  disabled={usuarioEditando}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="telefono">Teléfono</Label>
-                <Input
-                  id="telefono"
-                  value={formData.telefono}
-                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="rol">Rol</Label>
-                <Select value={formData.rol} onValueChange={(value) => setFormData({ ...formData, rol: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usuario.rol === "admin" && <SelectItem value="employee">Empleado</SelectItem>}
-                    <SelectItem value="customer">Cliente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {!usuarioEditando && (
-                <div>
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                  />
-                </div>
-              )}
-
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setModalAbierto(false)}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  {usuarioEditando ? "Actualizar" : "Crear Usuario"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Estadísticas */}
@@ -415,6 +338,143 @@ export default function PaginaUsuarios() {
           )}
         </CardContent>
       </Card>
+
+      {/* Overlay oscuro cuando el sidebar está abierto */}
+      {modalAbierto && (
+        <div 
+          className="fixed inset-0 bg-gray-600/40 z-[100] transition-opacity duration-300"
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            margin: 0,
+            padding: 0
+          }}
+          onClick={() => {
+            setModalAbierto(false)
+            setUsuarioEditando(null)
+            setFormData({ nombre: "", email: "", telefono: "", rol: "employee", password: "" })
+          }}
+        />
+      )}
+
+      {/* Sidebar que se desliza desde la derecha */}
+      <div
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[101] transform transition-transform duration-300 ease-in-out ${
+          modalAbierto ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+          {/* Header del sidebar */}
+          <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {usuarioEditando ? "Editar Usuario" : "Nuevo Usuario"}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {usuarioEditando ? "Modifica los datos del usuario" : "Crea un nuevo usuario para la tienda"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setModalAbierto(false)
+                  setUsuarioEditando(null)
+                  setFormData({ nombre: "", email: "", telefono: "", rol: "employee", password: "" })
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 overflow-y-auto h-[calc(100%-88px)]">
+             <form onSubmit={manejarSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="nombre">Nombre Completo</Label>
+                <Input
+                  id="nombre"
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  disabled={!!usuarioEditando}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="telefono">Teléfono</Label>
+                <Input
+                  id="telefono"
+                  value={formData.telefono}
+                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="rol">Rol</Label>
+                <Select value={formData.rol} onValueChange={(value) => setFormData({ ...formData, rol: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuario.rol === "admin" && <SelectItem value="employee">Empleado</SelectItem>}
+                    <SelectItem value="customer">Cliente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {!usuarioEditando && (
+                <div>
+                  <Label htmlFor="password">Contraseña</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setModalAbierto(false)}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {usuarioEditando ? "Actualizar" : "Crear Usuario"}
+                </Button>
+              </div>
+            </form>
+          </div>
+      </div>
     </div>
   )
 }

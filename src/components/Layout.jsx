@@ -33,8 +33,10 @@ export function Layout({ children }) {
     location.pathname.includes("/configuracion") ||
     location.pathname.includes("/maestros")
   
+  const esPaginaSuperAdmin = location.pathname.startsWith("/super-admin")
+
   // No mostrar header si no hay usuario y no es una página pública conocida (probablemente 404)
-  const mostrarHeader = !esPaginaPublica && !esPaginaTienda && usuarioActual
+  const mostrarHeader = !esPaginaPublica && !esPaginaTienda && !esPaginaSuperAdmin && usuarioActual
 
   return (
     <div className="min-h-screen bg-background">

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, setDoc } from "firebase/firestore"
-import { createUserWithEmailAndPassword } from "firebase/auth"
-import { db, auth } from "../lib/firebase"
+import { createUserWithEmailAndPassword, getAuth, signOut } from "firebase/auth"
+import { initializeApp, deleteApp } from "firebase/app"
+import { db, auth, firebaseConfig } from "../lib/firebase"
 import { useContextoTienda } from "../contexts/ContextoTienda"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -213,9 +214,18 @@ export function PaginaClientes() {
       // Crear usuario en Firebase Auth si se está creando cuenta
       let userId = null
       if (nuevoCliente.crearCuenta && !clienteEditando) {
+        let secondaryApp
         try {
-          const userCredential = await createUserWithEmailAndPassword(auth, nuevoCliente.email, nuevoCliente.password)
+          // Inicializar app secundaria para no desloguear al admin
+          const appName = `secondaryApp-client-${Date.now()}`
+          secondaryApp = initializeApp(firebaseConfig, appName)
+          const secondaryAuth = getAuth(secondaryApp)
+
+          const userCredential = await createUserWithEmailAndPassword(secondaryAuth, nuevoCliente.email, nuevoCliente.password)
           userId = userCredential.user.uid
+          
+          // Cerrar sesión en la app secundaria inmediatamente
+          await signOut(secondaryAuth)
 
           // Crear documento de usuario en Firestore
           await setDoc(doc(db, "usuarios", userId), {
@@ -239,6 +249,10 @@ export function PaginaClientes() {
           })
           setCargando(false)
           return
+        } finally {
+          if (secondaryApp) {
+            await deleteApp(secondaryApp)
+          }
         }
       }
 
