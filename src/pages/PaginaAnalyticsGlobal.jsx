@@ -90,35 +90,38 @@ const StackedBarChart = ({ data, keys, colors }) => {
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex justify-end gap-4 mb-4">
+      <div className="flex justify-end gap-4 mb-6">
          {keys.map((key, i) => (
-          <div key={i} className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors[i] }}></div>
-            <span className="text-xs text-gray-500 capitalize font-medium">{key}</span>
+          <div key={i} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[i] }}></div>
+            <span className="text-sm text-gray-600 capitalize font-medium">{key}</span>
           </div>
         ))}
       </div>
       
       <div className="flex-1 relative w-full min-h-[150px]">
-        {/* Grid Lines */}
-        <div className="absolute inset-0 flex flex-col justify-between text-xs text-gray-400 pointer-events-none z-0">
+        {/* Y-Axis Labels & Grid Lines */}
+        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none z-0">
           {[1, 0.75, 0.5, 0.25, 0].map((tick, i) => (
-            <div key={i} className="flex items-center w-full border-b border-gray-100 last:border-0 h-0 relative">
-              <span className="absolute -left-10 w-8 text-right text-[10px]">{Math.round(maxVal * tick)}</span>
+            <div key={i} className="flex items-center w-full h-0 relative">
+              <span className="absolute left-0 w-8 text-right text-xs text-gray-400 font-medium -translate-y-1/2">
+                {Math.round(maxVal * tick)}
+              </span>
+              <div className="w-full border-b border-gray-100 ml-12"></div>
             </div>
           ))}
         </div>
 
         {/* Bars */}
-        <div className="absolute inset-0 flex items-end justify-around pl-0 pt-2 pb-0 z-10">
+        <div className="absolute inset-0 flex items-end justify-around pl-12 pt-2 pb-0 z-10">
           {data.map((item, i) => {
             const totalValue = keys.reduce((acc, k) => acc + item[k], 0)
             const barHeightPercent = (totalValue / maxVal) * 100
             
             return (
-              <div key={i} className="h-full flex flex-col justify-end w-full max-w-[40px] px-1 group">
+              <div key={i} className="h-full flex flex-col justify-end w-full max-w-[60px] px-2 group">
                 <div 
-                   className="w-full rounded-sm overflow-hidden flex flex-col-reverse relative transition-transform hover:scale-105"
+                   className="w-full rounded-md overflow-hidden flex flex-col-reverse relative transition-transform hover:scale-105 shadow-sm"
                    style={{ height: `${barHeightPercent}%` }}
                 >
                   {keys.map((key, kIndex) => {
@@ -143,7 +146,7 @@ const StackedBarChart = ({ data, keys, colors }) => {
         </div>
       </div>
       
-      <div className="flex justify-around mt-3 text-xs text-gray-500 font-bold">
+      <div className="flex justify-around mt-4 pl-12 text-sm text-gray-500 font-bold">
         {data.map((item, i) => (
           <div key={i} className="w-full text-center truncate">{item.name}</div>
         ))}
