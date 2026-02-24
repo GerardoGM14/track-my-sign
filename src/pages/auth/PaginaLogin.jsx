@@ -86,7 +86,7 @@ export function PaginaLogin() {
       navigate(`/${usuarioARedirigir.tiendaId}`)
     } else if (usuarioARedirigir?.rol === "admin" && !usuarioARedirigir?.tiendaId) {
       navigate("/onboarding")
-    } else if (usuarioARedirigir?.rol === "empleado" && usuarioARedirigir?.tiendaId) {
+    } else if (usuarioARedirigir?.rol === "employee" && usuarioARedirigir?.tiendaId) {
       navigate(`/${usuarioARedirigir.tiendaId}`)
     } else {
       navigate("/cliente/dashboard")

@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore"
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useContextoTienda } from "@/contexts/ContextoTienda"
+import { useContextoAuth } from "@/contexts/ContextoAuth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,6 +18,9 @@ import { toast } from "@/hooks/user-toast"
 
 export function PaginaCotizaciones() {
   const { tiendaActual } = useContextoTienda()
+  const { usuarioActual } = useContextoAuth()
+  const esCliente = usuarioActual?.rol === "cliente" || usuarioActual?.rol === "customer"
+
   const [cotizaciones, setCotizaciones] = useState([])
   const [productos, setProductos] = useState([])
   const [reglasPrecio, setReglasPrecio] = useState([])
@@ -65,7 +69,13 @@ export function PaginaCotizaciones() {
       setCargando(true)
 
       // Cargar cotizaciones
-      const cotizacionesRef = collection(db, "tiendas", tiendaActual.id, "cotizaciones")
+      let cotizacionesRef = collection(db, "tiendas", tiendaActual.id, "cotizaciones")
+      
+      // Filtrar si es cliente
+      if (esCliente && usuarioActual?.email) {
+        cotizacionesRef = query(cotizacionesRef, where("cliente.email", "==", usuarioActual.email))
+      }
+
       const cotizacionesSnapshot = await getDocs(cotizacionesRef)
       const cotizacionesData = cotizacionesSnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -324,6 +334,8 @@ export function PaginaCotizaciones() {
     switch (estado) {
       case "borrador":
         return "bg-gray-100 text-gray-800"
+      case "pendiente":
+        return "bg-yellow-100 text-yellow-800"
       case "enviada":
         return "bg-blue-100 text-blue-800"
       case "aprobada":
@@ -345,6 +357,7 @@ export function PaginaCotizaciones() {
           <h1 className="text-2xl font-bold text-gray-900 leading-tight">Cotizaciones</h1>
           <p className="text-sm text-gray-600 mt-1 leading-tight">Gestiona tus cotizaciones y propuestas comerciales</p>
         </div>
+        {!esCliente && (
         <Button 
           onClick={() => setMostrarFormulario(true)} 
           className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -352,6 +365,7 @@ export function PaginaCotizaciones() {
           <Plus className="mr-2 h-4 w-4" />
           Nueva Cotización
         </Button>
+        )}
       </div>
 
       {/* Overlay oscuro cuando el sidebar está abierto */}
@@ -786,6 +800,8 @@ export function PaginaCotizaciones() {
                 return <XCircle className="h-4 w-4" />
               case "enviada":
                 return <Send className="h-4 w-4" />
+              case "pendiente":
+                return <Clock className="h-4 w-4" />
               case "vencida":
                 return <Clock className="h-4 w-4" />
               default:
@@ -839,38 +855,43 @@ export function PaginaCotizaciones() {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {cotizacion.estado === "borrador" && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => cambiarEstadoCotizacion(cotizacion.id, "enviada")}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        <Send className="h-3 w-3 mr-1" />
-                        Enviar
-                      </Button>
-                    )}
-                    {cotizacion.estado === "enviada" && (
+                    {!esCliente && (
                       <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => cambiarEstadoCotizacion(cotizacion.id, "aprobada")}
-                          className="border-green-300 text-green-700 hover:bg-green-50"
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Aprobar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => cambiarEstadoCotizacion(cotizacion.id, "rechazada")}
-                          className="border-red-300 text-red-700 hover:bg-red-50"
-                        >
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Rechazar
-                        </Button>
+                        {cotizacion.estado === "borrador" && (
+                          <Button 
+                            size="sm" 
+                            onClick={() => cambiarEstadoCotizacion(cotizacion.id, "enviada")}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Send className="h-3 w-3 mr-1" />
+                            Enviar
+                          </Button>
+                        )}
+                        {cotizacion.estado === "enviada" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => cambiarEstadoCotizacion(cotizacion.id, "aprobada")}
+                              className="border-green-300 text-green-700 hover:bg-green-50"
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Aprobar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => cambiarEstadoCotizacion(cotizacion.id, "rechazada")}
+                              className="border-red-300 text-red-700 hover:bg-red-50"
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Rechazar
+                            </Button>
+                          </>
+                        )}
                       </>
                     )}
+                    
                     <Button 
                       size="sm" 
                       variant="outline"
@@ -879,14 +900,17 @@ export function PaginaCotizaciones() {
                       <FileText className="h-3 w-3 mr-1" />
                       PDF
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => eliminarCotizacion(cotizacion.id)}
-                      className="border-red-300 text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    
+                    {!esCliente && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => eliminarCotizacion(cotizacion.id)}
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -901,6 +925,7 @@ export function PaginaCotizaciones() {
             <FileText className="h-12 w-12 text-gray-400 mb-4" />
             <p className="text-gray-500 text-base mb-2">No hay cotizaciones registradas</p>
             <p className="text-gray-400 text-sm mb-6">Comienza creando tu primera cotización</p>
+            {!esCliente && (
             <Button 
               className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => setMostrarFormulario(true)}
@@ -908,6 +933,7 @@ export function PaginaCotizaciones() {
               <Plus className="mr-2 h-4 w-4" />
               Crear Primera Cotización
             </Button>
+            )}
           </CardContent>
         </Card>
       )}

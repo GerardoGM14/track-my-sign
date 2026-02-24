@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { collection, addDoc, getDocs, updateDoc, doc, query, where } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useContextoTienda } from "@/contexts/ContextoTienda"
@@ -15,8 +16,107 @@ import { Textarea } from "@/components/ui/textarea"
 import { Clock, User, Calendar, FileText, Plus, ArrowRight, CheckCircle, AlertCircle, PlayCircle, ClipboardList, X } from "lucide-react"
 import { toast } from "@/hooks/user-toast"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import {
+  DndContext,
+  closestCorners,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+
+// Componente para la Tarjeta de Orden (Draggable)
+function KanbanCard({ orden, prioridades, empleados, usuarioActual, asignarEmpleado, onClick, canDrag = true }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: orden.id, data: { orden }, disabled: !canDrag })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  const prioridad = prioridades.find((p) => p.value === orden.prioridad) || { label: "Normal", color: "bg-gray-100" }
+  const empleadoNombre = empleados.find((e) => e.id === orden.employeeAssigned)?.nombre || "Sin asignar"
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none mb-3">
+      <Card 
+        className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow border border-gray-200 rounded-lg bg-white ${isDragging ? "shadow-xl rotate-2" : ""}`}
+        onClick={onClick}
+      >
+        <CardHeader className="pb-2 p-3">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded">{orden.numero}</span>
+            <Badge className={`${prioridad.color} text-[10px] px-1 py-0 h-5`}>{prioridad.label}</Badge>
+          </div>
+          <p className="text-xs text-gray-600 mt-2 font-medium truncate" title={orden.cliente?.nombre}>
+            {orden.cliente?.nombre || "Sin cliente"}
+          </p>
+          {orden.cliente?.empresa && (
+            <p className="text-[10px] text-gray-500 truncate">{orden.cliente.empresa}</p>
+          )}
+        </CardHeader>
+        <CardContent className="p-3 pt-0">
+          <div className="space-y-2 mt-2">
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                <User className="w-3 h-3" />
+                <span className="truncate max-w-[80px]" title={empleadoNombre}>{empleadoNombre}</span>
+              </div>
+              <span className="font-semibold text-gray-900">€{orden.totales?.total || "0.00"}</span>
+            </div>
+            
+            <div className="flex items-center gap-1 text-[10px] text-gray-400">
+              <Calendar className="w-3 h-3" />
+              <span>{orden.fechaEntrega?.seconds ? new Date(orden.fechaEntrega.seconds * 1000).toLocaleDateString() : "Sin fecha"}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Componente para la Columna (Droppable)
+function KanbanColumn({ id, title, icon: Icon, count, children }) {
+  const { setNodeRef } = useSortable({ id: id, data: { type: "column" } })
+
+  return (
+    <div ref={setNodeRef} className="bg-gray-50/80 rounded-xl p-3 border border-gray-200 h-full min-h-[500px] flex flex-col">
+      <div className="flex items-center justify-between mb-4 px-1">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-md ${id === 'pendiente' ? 'bg-gray-200' : id === 'en_progreso' ? 'bg-blue-100' : id === 'revision' ? 'bg-yellow-100' : 'bg-green-100'}`}>
+            <Icon className={`w-4 h-4 ${id === 'pendiente' ? 'text-gray-700' : id === 'en_progreso' ? 'text-blue-700' : id === 'revision' ? 'text-yellow-700' : 'text-green-700'}`} />
+          </div>
+          <h3 className="font-semibold text-gray-700 text-sm">{title}</h3>
+        </div>
+        <Badge variant="secondary" className="bg-white border border-gray-200 text-gray-600 text-xs font-mono">{count}</Badge>
+      </div>
+      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export function PaginaOrdenes() {
+  const navigate = useNavigate()
   const { tiendaActual } = useContextoTienda()
   const { usuarioActual } = useContextoAuth()
   const [ordenes, setOrdenes] = useState([])
@@ -30,9 +130,82 @@ export function PaginaOrdenes() {
     cotizacionId: "",
     prioridad: "media",
     fechaEntrega: "",
-    empleadoAsignado: "",
+    employeeAssigned: "",
     notas: "",
   })
+
+  const [activeId, setActiveId] = useState(null)
+  const [activeOrden, setActiveOrden] = useState(null)
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10, // Necesario para distinguir click de drag
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  )
+
+  const handleDragStart = (event) => {
+    const { active } = event
+    setActiveId(active.id)
+    setActiveOrden(active.data.current?.orden)
+  }
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event
+    
+    if (!over) {
+      setActiveId(null)
+      setActiveOrden(null)
+      return
+    }
+
+    const ordenId = active.id
+    const ordenActual = active.data.current?.orden
+    
+    // Identificar el contenedor destino (columna)
+    let nuevoEstado = over.id
+
+    // Si soltamos sobre otra tarjeta, buscamos su estado contenedor
+    if (over.data.current?.orden) {
+      nuevoEstado = over.data.current.orden.estado
+    }
+
+    // Validar que el estado destino sea válido
+    const esEstadoValido = estados.some(e => e.id === nuevoEstado)
+    
+    if (esEstadoValido && ordenActual && ordenActual.estado !== nuevoEstado) {
+      // Actualización optimista en UI
+      setOrdenes(prev => prev.map(o => {
+        if (o.id === ordenId) {
+          return { ...o, estado: nuevoEstado }
+        }
+        return o
+      }))
+
+      // Actualización en Firebase
+      await cambiarEstadoOrden(ordenId, nuevoEstado)
+    }
+
+    setActiveId(null)
+    setActiveOrden(null)
+  }
+
+  const dropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: '0.5',
+        },
+      },
+    }),
+  }
 
   const estados = [
     {
@@ -78,8 +251,17 @@ export function PaginaOrdenes() {
       setCargando(true)
 
       // Cargar órdenes
-      const ordenesRef = collection(db, "tiendas", tiendaActual.id, "ordenes")
-      const ordenesSnapshot = await getDocs(ordenesRef)
+      let ordenesRef = collection(db, "tiendas", tiendaActual.id, "ordenes")
+      let qOrdenes = query(ordenesRef)
+
+      if (usuarioActual.rol === "customer") {
+        // Asumiendo que cliente.id guarda el UID del usuario
+        // Si no, habría que ver cómo se guarda el cliente en la orden
+        // Por ahora intentamos filtrar por cliente.id
+        qOrdenes = query(ordenesRef, where("cliente.id", "==", usuarioActual.uid))
+      }
+
+      const ordenesSnapshot = await getDocs(qOrdenes)
       const ordenesData = ordenesSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -95,7 +277,7 @@ export function PaginaOrdenes() {
           id: doc.id,
           ...doc.data(),
         }))
-        .filter((user) => user.rol === "empleado" || user.rol === "admin")
+        .filter((user) => user.rol === "employee" || user.rol === "admin")
       setEmpleados(empleadosData)
 
       // Cargar cotizaciones aprobadas
@@ -139,7 +321,7 @@ export function PaginaOrdenes() {
         prioridad: nuevaOrden.prioridad,
         fechaCreacion: new Date(),
         fechaEntrega: new Date(nuevaOrden.fechaEntrega),
-        empleadoAsignado: nuevaOrden.empleadoAsignado,
+        employeeAssigned: nuevaOrden.employeeAssigned,
         notas: nuevaOrden.notas,
         tiempoIniciado: null,
         tiempoCompletado: null,
@@ -223,7 +405,7 @@ export function PaginaOrdenes() {
     try {
       const empleado = empleados.find((e) => e.id === empleadoId)
       await updateDoc(doc(db, "tiendas", tiendaActual.id, "ordenes", ordenId), {
-        empleadoAsignado: empleadoId,
+        employeeAssigned: empleadoId,
         fechaActualizacion: new Date(),
       })
       await cargarDatos()
@@ -244,6 +426,8 @@ export function PaginaOrdenes() {
   const obtenerOrdenesPorEstado = (estado) => {
     return ordenes.filter((orden) => orden.estado === estado)
   }
+
+
 
   const obtenerEmpleadoNombre = (empleadoId) => {
     const empleado = empleados.find((e) => e.id === empleadoId)
@@ -285,13 +469,15 @@ export function PaginaOrdenes() {
             <h1 className="text-2xl font-bold text-gray-900 leading-tight">Gestión de Órdenes</h1>
             <p className="text-sm text-gray-600 mt-1 leading-tight">Sigue el estado de tus órdenes de trabajo</p>
           </div>
-          <Button 
-            onClick={() => setMostrarDialogoOrden(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Orden
-          </Button>
+          {usuarioActual.rol !== "customer" && (
+            <Button 
+              onClick={() => setMostrarDialogoOrden(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Orden
+            </Button>
+          )}
         </div>
 
       {cargando && ordenes.length === 0 && (
@@ -299,181 +485,78 @@ export function PaginaOrdenes() {
       )}
 
       {!cargando && (
-        <>
-      {/* Tablero Kanban */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {estados.map((estado) => {
-          const ordenesEstado = obtenerOrdenesPorEstado(estado.id)
-          const IconoEstado = estado.icono
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          {/* Tablero Kanban */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-[calc(100vh-200px)]">
+            {estados.map((estado) => {
+              const ordenesEstado = obtenerOrdenesPorEstado(estado.id)
+              
+              return (
+                <KanbanColumn
+                  key={estado.id}
+                  id={estado.id}
+                  title={estado.nombre}
+                  icon={estado.icono}
+                  count={ordenesEstado.length}
+                >
+                  <SortableContext
+                    items={ordenesEstado.map(o => o.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3 min-h-[100px]">
+                      {ordenesEstado.map((orden) => (
+                        <KanbanCard
+                          key={orden.id}
+                          orden={orden}
+                          prioridades={prioridades}
+                          empleados={empleados}
+                          usuarioActual={usuarioActual}
+                          asignarEmpleado={asignarEmpleado}
+                          canDrag={usuarioActual.rol !== "customer"}
+                          onClick={() => {
+                            // Evitar abrir el modal si estamos arrastrando
+                            if (!activeId) {
+                              navigate(`/${tiendaActual.slug}/ordenes/${orden.id}`)
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </KanbanColumn>
+              )
+            })}
+          </div>
 
-          return (
-            <div key={estado.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <IconoEstado className="w-5 h-5 text-gray-600" />
-                  <h3 className="font-semibold text-gray-900 text-sm leading-tight">{estado.nombre}</h3>
-                </div>
-                <Badge variant="secondary" className="bg-gray-200 text-gray-700">{ordenesEstado.length}</Badge>
+          <DragOverlay dropAnimation={dropAnimation}>
+            {activeOrden ? (
+              <div className="transform rotate-2 opacity-80 cursor-grabbing">
+                <Card className="border border-blue-500 shadow-2xl bg-white w-[280px]">
+                  <CardHeader className="pb-2 p-3">
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded">{activeOrden.numero}</span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-2 font-medium truncate">
+                      {activeOrden.cliente?.nombre || "Sin cliente"}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="p-3 pt-0">
+                    <div className="space-y-2 mt-2">
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span className="font-semibold text-gray-900">€{activeOrden.totales?.total || "0.00"}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-
-              <div className="space-y-3">
-                {ordenesEstado.map((orden) => {
-                  const siguienteEstado = obtenerSiguienteEstado(orden.estado)
-                  const prioridad = prioridades.find((p) => p.value === orden.prioridad)
-
-                  return (
-                    <Card 
-                      key={orden.id} 
-                      className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200 rounded-lg bg-white"
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-sm font-semibold text-gray-900 leading-tight">{orden.numero}</CardTitle>
-                          <Badge className={`${prioridad.color} text-xs`}>{prioridad.label}</Badge>
-                        </div>
-                        <p className="text-xs text-gray-600 mt-1 leading-tight">
-                          {orden.cliente?.nombre || "Sin cliente"} {orden.cliente?.empresa && `- ${orden.cliente.empresa}`}
-                        </p>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <User className="w-3 h-3" />
-                            <span>{obtenerEmpleadoNombre(orden.empleadoAsignado)}</span>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Calendar className="w-3 h-3" />
-                            <span>Entrega: {new Date(orden.fechaEntrega?.seconds * 1000).toLocaleDateString()}</span>
-                          </div>
-
-                          {orden.tiempoIniciado && (
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <Clock className="w-3 h-3" />
-                              <span>Tiempo: {calcularTiempoTranscurrido(orden)}</span>
-                            </div>
-                          )}
-
-                          <div className="text-sm font-semibold">€{orden.totales?.total || "0.00"}</div>
-
-                          <div className="flex gap-1 mt-2">
-                            {orden.empleadoAsignado !== usuarioActual.id && (
-                              <Select
-                                value={orden.empleadoAsignado || ""}
-                                onValueChange={(value) => asignarEmpleado(orden.id, value)}
-                              >
-                                <SelectTrigger className="h-6 text-xs">
-                                  <SelectValue placeholder="Asignar" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {empleados.map((empleado) => (
-                                    <SelectItem key={empleado.id} value={empleado.id}>
-                                      {empleado.nombre}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-
-                            {siguienteEstado && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs px-2 border-blue-300 text-blue-700 hover:bg-blue-50 flex-1"
-                                onClick={() => cambiarEstadoOrden(orden.id, siguienteEstado.id)}
-                              >
-                                <ArrowRight className="w-3 h-3 mr-1" />
-                                {siguienteEstado.nombre}
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-
-                {ordenesEstado.length === 0 && (
-                  <div className="text-center py-8 text-gray-500 text-sm">
-                    No hay órdenes en {estado.nombre.toLowerCase()}
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
-        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 leading-tight">Total Órdenes</p>
-                <p className="text-2xl font-bold text-gray-900 leading-tight">{ordenes.length}</p>
-              </div>
-              <FileText className="w-8 h-8 text-gray-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 leading-tight">En Progreso</p>
-                <p className="text-2xl font-bold text-blue-600 leading-tight">{obtenerOrdenesPorEstado("en_progreso").length}</p>
-              </div>
-              <PlayCircle className="w-8 h-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 leading-tight">Completadas</p>
-                <p className="text-2xl font-bold text-green-600 leading-tight">{obtenerOrdenesPorEstado("completado").length}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 leading-tight">Valor Total</p>
-                <p className="text-2xl font-bold">
-                  €{ordenes.reduce((sum, orden) => sum + Number.parseFloat(orden.totales?.total || 0), 0).toFixed(2)}
-                </p>
-              </div>
-              <Calendar className="w-8 h-8 text-gray-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {ordenes.length === 0 && !cargando && (
-        <Card className="border border-gray-200 rounded-xl shadow-md bg-white">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <ClipboardList className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 text-base mb-2">No hay órdenes registradas</p>
-            <p className="text-gray-400 text-sm mb-6">Comienza creando tu primera orden de trabajo</p>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setMostrarDialogoOrden(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Crear Primera Orden
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-        </>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* Overlay oscuro cuando el sidebar está abierto */}
@@ -608,8 +691,8 @@ export function PaginaOrdenes() {
                   Empleado Asignado
                 </Label>
                 <Select
-                  value={nuevaOrden.empleadoAsignado}
-                  onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, empleadoAsignado: value })}
+                  value={nuevaOrden.employeeAssigned}
+                  onValueChange={(value) => setNuevaOrden({ ...nuevaOrden, employeeAssigned: value })}
                 >
                   <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-10 w-full">
                     <SelectValue placeholder="Seleccionar empleado" />

@@ -12,7 +12,9 @@ import { PaginaPrecios } from "@/pages/dashboard/admin/PaginaPrecios"
 import PaginaPreciosSaaS from "./pages/public/PaginaPreciosSaaS"
 import { PaginaCotizaciones } from "@/pages/dashboard/shared/PaginaCotizaciones"
 import { PaginaOrdenes } from "@/pages/dashboard/shared/PaginaOrdenes"
+import PaginaDetalleOrden from "@/pages/dashboard/shared/PaginaDetalleOrden"
 import { PaginaClientes } from "@/pages/dashboard/shared/PaginaClientes"
+import PaginaSolicitarCotizacion from "@/pages/dashboard/customer/PaginaSolicitarCotizacion"
 import { PortalCliente } from "./pages/public/PortalCliente"
 import { PaginaNoEncontrada } from "./pages/public/PaginaNoEncontrada"
 import { PaginaFacturacion } from "@/pages/dashboard/admin/PaginaFacturacion"
@@ -20,11 +22,11 @@ import PaginaUsuarios from "@/pages/dashboard/admin/PaginaUsuarios"
 import PaginaConfiguracion from "@/pages/dashboard/admin/PaginaConfiguracion"
 import PaginaMaestros from "@/pages/dashboard/admin/PaginaMaestros"
 import PaginaPerfil from "@/pages/dashboard/shared/PaginaPerfil"
-import SuperAdminLicencia from "./pages/super-admin/SuperAdminLicencia"
-import DashboardSuperAdmin from "./pages/super-admin/DashboardSuperAdmin"
-import PaginaGestionTiendas from "./pages/super-admin/PaginaGestionTiendas"
-import PaginaAnalyticsGlobal from "./pages/super-admin/PaginaAnalyticsGlobal"
-import PaginaAdministracion from "./pages/super-admin/PaginaAdministracion"
+import SuperAdminLicencia from "@/pages/dashboard/superadmin/SuperAdminLicencia"
+import DashboardSuperAdmin from "@/pages/dashboard/superadmin/DashboardSuperAdmin"
+import PaginaGestionTiendas from "@/pages/dashboard/superadmin/PaginaGestionTiendas"
+import PaginaAnalyticsGlobal from "@/pages/dashboard/superadmin/PaginaAnalyticsGlobal"
+import PaginaAdministracion from "@/pages/dashboard/superadmin/PaginaAdministracion"
 import { RutaDashboard } from "./components/layout/RutaDashboard"
 import LayoutDashboard from "./components/layout/LayoutDashboard"
 import { RouteLoader } from "./components/layout/RouteLoader"
@@ -56,7 +58,7 @@ function App() {
               <Route
                 path="/:slugTienda/productos"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="employee">
                     <LayoutDashboard>
                       <PaginaProductos />
                     </LayoutDashboard>
@@ -66,7 +68,7 @@ function App() {
               <Route
                 path="/:slugTienda/precios"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="employee">
                     <LayoutDashboard>
                       <PaginaPrecios />
                     </LayoutDashboard>
@@ -76,7 +78,7 @@ function App() {
               <Route
                 path="/:slugTienda/cotizaciones"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="customer">
                     <LayoutDashboard>
                       <PaginaCotizaciones />
                     </LayoutDashboard>
@@ -84,9 +86,19 @@ function App() {
                 }
               />
               <Route
+                path="/:slugTienda/cotizaciones/solicitar"
+                element={
+                  <RutaProtegida rolRequerido="customer">
+                    <LayoutDashboard>
+                      <PaginaSolicitarCotizacion />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
+              <Route
                 path="/:slugTienda/ordenes"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="customer">
                     <LayoutDashboard>
                       <PaginaOrdenes />
                     </LayoutDashboard>
@@ -94,9 +106,19 @@ function App() {
                 }
               />
               <Route
+                path="/:slugTienda/ordenes/:id"
+                element={
+                  <RutaProtegida rolRequerido="customer">
+                    <LayoutDashboard>
+                      <PaginaDetalleOrden />
+                    </LayoutDashboard>
+                  </RutaProtegida>
+                }
+              />
+              <Route
                 path="/:slugTienda/clientes"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="employee">
                     <LayoutDashboard>
                       <PaginaClientes />
                     </LayoutDashboard>

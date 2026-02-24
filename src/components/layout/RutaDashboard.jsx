@@ -1,7 +1,7 @@
 "use client"
 import { useAuth } from "../../contexts/ContextoAuth"
 import DashboardAdmin from "@/pages/dashboard/admin/DashboardAdmin"
-import DashboardSuperAdmin from "../../pages/super-admin/DashboardSuperAdmin"
+import DashboardSuperAdmin from "@/pages/dashboard/superadmin/DashboardSuperAdmin"
 import DashboardEmployee from "@/pages/dashboard/employee/DashboardEmployee"
 import DashboardCustomer from "@/pages/dashboard/customer/DashboardCustomer"
 import LayoutDashboard from "./LayoutDashboard"

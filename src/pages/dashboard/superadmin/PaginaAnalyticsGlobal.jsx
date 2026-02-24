@@ -1,16 +1,18 @@
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card"
-import { Button } from "../../components/ui/button"
-import { CalendarDateRangePicker } from "../../components/ui/date-range-picker"
-import { useContextoAuth } from "../../contexts/ContextoAuth"
+import { useState, useEffect } from "react"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { CalendarDateRangePicker } from "@/components/ui/date-range-picker"
+import { useContextoAuth } from "@/contexts/ContextoAuth"
 import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../components/ui/select"
-import { Badge } from "../../components/ui/badge"
+} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { Calendar } from "lucide-react"
 
 // --- Componentes de Gráficos SVG Personalizados (Estilizados) ---
@@ -201,58 +203,53 @@ const FullStackedBarChart = ({ data, keys, colors }) => {
   )
 }
 
-const TransactionTable = () => {
-  const transactions = [
-    { id: 1, date: "06/01/2026", plan: "Empresarial", status: 95, amount: "€1,200", user: "Imprenta Color" },
-    { id: 2, date: "06/01/2026", plan: "Profesional", status: 80, amount: "€850", user: "Rótulos Madrid" },
-    { id: 3, date: "06/01/2026", plan: "Básico", status: 100, amount: "€450", user: "Diseños Express" },
-    { id: 4, date: "05/01/2026", plan: "Empresarial", status: 90, amount: "€1,200", user: "Gran Formato SL" },
-    { id: 5, date: "05/01/2026", plan: "Profesional", status: 60, amount: "€850", user: "Vinilos & Más" },
-  ]
-
+const TransactionTable = ({ tiendas }) => {
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full text-sm text-left">
         <thead className="text-xs text-gray-500 bg-gray-50/50 uppercase border-b border-gray-100">
           <tr>
-            <th className="px-6 py-3 font-medium">#</th>
-            <th className="px-6 py-3 font-medium">Fecha</th>
-            <th className="px-6 py-3 font-medium">Plan / Turno</th>
-            <th className="px-6 py-3 font-medium w-1/3">Ratio de Eficiencia</th>
-            <th className="px-6 py-3 font-medium text-right">Monto</th>
-            <th className="px-6 py-3 font-medium">Cliente</th>
+            <th className="px-6 py-3 font-medium">Tienda</th>
+            <th className="px-6 py-3 font-medium">Fecha Registro</th>
+            <th className="px-6 py-3 font-medium">Plan</th>
+            <th className="px-6 py-3 font-medium">Estado</th>
+            <th className="px-6 py-3 font-medium text-right">Valor Estimado</th>
+            <th className="px-6 py-3 font-medium">Propietario</th>
           </tr>
         </thead>
         <tbody>
-          {transactions.map((t) => (
+          {tiendas.map((t) => {
+             const precio = t.plan === 'enterprise' ? '€99' : t.plan === 'professional' ? '€49' : '€29'
+             return (
             <tr key={t.id} className="bg-white border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-              <td className="px-6 py-4 text-gray-500">{t.id}</td>
-              <td className="px-6 py-4 font-medium text-gray-900 flex items-center gap-2">
+              <td className="px-6 py-4 font-medium text-gray-900">{t.nombre}</td>
+              <td className="px-6 py-4 text-gray-500 flex items-center gap-2">
                 <span className="text-gray-400"><Calendar className="w-4 h-4" /></span> 
                 <div>
-                  <div className="text-sm">{t.date}</div>
-                  <div className="text-xs text-gray-400 font-normal">20 Ene, 2026 - 09 Feb, 2026</div>
+                  <div className="text-sm">{t.fechaCreacion ? new Date(t.fechaCreacion.seconds * 1000).toLocaleDateString() : 'N/A'}</div>
                 </div>
               </td>
               <td className="px-6 py-4">
                 <Badge variant="secondary" className={`
-                  ${t.plan === 'Empresarial' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : ''}
-                  ${t.plan === 'Profesional' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : ''}
-                  ${t.plan === 'Básico' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : ''}
+                  ${t.plan === 'enterprise' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : ''}
+                  ${t.plan === 'professional' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : ''}
+                  ${t.plan === 'basic' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : ''}
                 `}>
-                  {t.plan.toUpperCase()}
+                  {t.plan ? t.plan.toUpperCase() : 'BASIC'}
                 </Badge>
               </td>
               <td className="px-6 py-4">
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
-                   <div style={{ width: `${t.status}%` }} className="h-full bg-emerald-400"></div>
-                   <div style={{ width: `${100 - t.status}%` }} className="h-full bg-orange-400"></div>
-                </div>
+                 <Badge variant="outline" className={t.estado === 'activa' ? 'text-green-600 border-green-200 bg-green-50' : 'text-gray-500'}>
+                    {t.estado || 'pendiente'}
+                 </Badge>
               </td>
-              <td className="px-6 py-4 font-bold text-gray-900 text-right">{t.amount}</td>
-              <td className="px-6 py-4 text-gray-600">{t.user}</td>
+              <td className="px-6 py-4 font-bold text-gray-900 text-right">{precio}</td>
+              <td className="px-6 py-4 text-gray-600">{t.propietarioEmail || 'Sin asignar'}</td>
             </tr>
-          ))}
+          )})}
+          {tiendas.length === 0 && (
+             <tr><td colSpan={6} className="text-center py-4 text-gray-500">No hay registros recientes</td></tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -266,14 +263,56 @@ export default function PaginaAnalyticsGlobal() {
   // Estados para filtros
   const [selectedLocation, setSelectedLocation] = useState("TODOS")
   const [selectedShift, setSelectedShift] = useState("TODOS")
+  const [cargando, setCargando] = useState(true)
   
-  // Datos Mocks
-  const dataPlanes = [
-    { label: "Empresarial", value: 156, color: "#3B82F6" }, // blue-500
-    { label: "Profesional", value: 342, color: "#10B981" }, // emerald-500
-    { label: "Básico", value: 245, color: "#9CA3AF" }, // gray-400
-    { label: "Cancelados", value: 42, color: "#EF4444" }, // red-500
-  ]
+  // Datos Reales
+  const [dataPlanes, setDataPlanes] = useState([])
+  const [tiendasRecientes, setTiendasRecientes] = useState([])
+  const [totalActivos, setTotalActivos] = useState(0)
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        setCargando(true)
+        const tiendasRef = collection(db, "tiendas")
+        const snapshot = await getDocs(tiendasRef)
+        const tiendas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+
+        // 1. Datos para Donut Chart (Planes)
+        const conteoPlanes = tiendas.reduce((acc, t) => {
+          const plan = t.plan || "basic"
+          acc[plan] = (acc[plan] || 0) + 1
+          return acc
+        }, {})
+
+        const planesFormatted = [
+          { label: "Empresarial", value: conteoPlanes["enterprise"] || 0, color: "#3B82F6" },
+          { label: "Profesional", value: conteoPlanes["professional"] || 0, color: "#10B981" },
+          { label: "Básico", value: conteoPlanes["basic"] || 0, color: "#9CA3AF" },
+        ].filter(p => p.value > 0)
+
+        setDataPlanes(planesFormatted)
+        setTotalActivos(tiendas.filter(t => t.estado === "activa").length)
+
+        // 2. Tabla de Tiendas Recientes
+        const recientes = [...tiendas].sort((a, b) => {
+           const dateA = a.fechaCreacion?.seconds || 0
+           const dateB = b.fechaCreacion?.seconds || 0
+           return dateB - dateA
+        }).slice(0, 10)
+        
+        setTiendasRecientes(recientes)
+
+      } catch (error) {
+        console.error("Error cargando analytics:", error)
+      } finally {
+        setCargando(false)
+      }
+    }
+    cargarDatos()
+  }, [])
+  
+  // Datos Mocks (Mantenemos los que son difíciles de calcular sin histórico real por ahora)
 
   const dataIngresos = [
     { name: "07/01", suscripciones: 300, addons: 60 },
@@ -420,7 +459,7 @@ export default function PaginaAnalyticsGlobal() {
           <CardDescription>Últimas transacciones y cambios de estado</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <TransactionTable />
+          <TransactionTable tiendas={tiendasRecientes} />
         </CardContent>
       </Card>
       

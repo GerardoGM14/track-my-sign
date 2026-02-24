@@ -180,9 +180,9 @@ export function ProveedorAuth({ children }) {
 
     const permisosPorRol = {
       superadmin: ["*"], // Todos los permisos
-      admin: ["gestionar_tienda", "gestionar_empleados", "ver_reportes", "gestionar_clientes"],
-      employee: ["gestionar_clientes", "crear_cotizaciones", "gestionar_ordenes"],
-      customer: ["ver_cotizaciones", "ver_ordenes"],
+      admin: ["manage_store", "manage_employees", "view_reports", "manage_customers"],
+      employee: ["manage_customers", "create_quotes", "manage_orders"],
+      customer: ["view_quotes", "view_orders"],
     }
 
     const permisosUsuario = permisosPorRol[usuarioActual.rol] || []

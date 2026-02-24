@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { doc, getDoc, setDoc } from "firebase/firestore"
-import { db } from "../../lib/firebase"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Input } from "../../components/ui/input"
-import { Label } from "../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
-import { toast } from "../../hooks/user-toast"
+import { db } from "@/lib/firebase"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "@/hooks/user-toast"
 import { Save, Building2 } from "lucide-react"
 
 export default function SuperAdminLicencia() {

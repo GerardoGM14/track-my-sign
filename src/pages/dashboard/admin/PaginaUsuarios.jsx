@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/ContextoAuth"
 import { useTienda } from "@/contexts/ContextoTienda"
-import { collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc } from "firebase/firestore"
+import { collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, setDoc, serverTimestamp } from "firebase/firestore"
 import { createUserWithEmailAndPassword, getAuth, signOut } from "firebase/auth"
 import { initializeApp, getApp, getApps, deleteApp } from "firebase/app"
 import { db, auth, firebaseConfig } from "@/lib/firebase"
@@ -89,7 +89,7 @@ export default function PaginaUsuarios() {
             // Cerrar sesión en la app secundaria inmediatamente
             await signOut(secondaryAuth)
 
-            await addDoc(collection(db, "usuarios"), {
+            await setDoc(doc(db, "usuarios", userCredential.user.uid), {
               uid: userCredential.user.uid,
               nombre: formData.nombre,
               email: formData.email,
@@ -163,7 +163,10 @@ export default function PaginaUsuarios() {
 
   const abrirModalCreacion = () => {
     setUsuarioEditando(null)
-    setFormData({ nombre: "", email: "", telefono: "", rol: "employee", password: "" })
+    // Determinar rol por defecto según permisos
+    const esAdmin = ["admin", "superadmin"].includes(usuario.rol)
+    const rolPorDefecto = esAdmin ? "employee" : "customer"
+    setFormData({ nombre: "", email: "", telefono: "", rol: rolPorDefecto, password: "" })
     setModalAbierto(true)
   }
 
@@ -432,12 +435,18 @@ export default function PaginaUsuarios() {
 
               <div>
                 <Label htmlFor="rol">Rol</Label>
-                <Select value={formData.rol} onValueChange={(value) => setFormData({ ...formData, rol: value })}>
+                <Select 
+                  value={formData.rol} 
+                  onValueChange={(value) => setFormData({ ...formData, rol: value })}
+                  disabled={!["admin", "superadmin"].includes(usuario.rol) && !usuarioEditando} // Si no es admin, solo puede crear clientes (rol fijo)
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {usuario.rol === "admin" && <SelectItem value="employee">Empleado</SelectItem>}
+                    {["admin", "superadmin"].includes(usuario.rol) && (
+                      <SelectItem value="employee">Empleado</SelectItem>
+                    )}
                     <SelectItem value="customer">Cliente</SelectItem>
                   </SelectContent>
                 </Select>

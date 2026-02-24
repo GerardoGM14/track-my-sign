@@ -11,9 +11,22 @@ export function RutaProtegida({ children, rolRequerido }) {
 
   if (rolRequerido && usuarioActual.rol !== rolRequerido) {
     // Verificar jerarquía de roles
-    const jerarquiaRoles = ["cliente", "empleado", "admin", "superadmin"]
-    const indiceRolUsuario = jerarquiaRoles.indexOf(usuarioActual.rol)
-    const indiceRolRequerido = jerarquiaRoles.indexOf(rolRequerido)
+    // Normalizamos a inglés para coincidir con la base de datos
+    const jerarquiaRoles = ["customer", "employee", "admin", "superadmin"]
+    
+    // Mapeo de roles en español a inglés por si acaso se pasan props antiguas
+    const mapaRoles = {
+      "cliente": "customer",
+      "empleado": "employee",
+      "administrador": "admin",
+      "superadmin": "superadmin"
+    }
+
+    const rolUsuarioNormalizado = mapaRoles[usuarioActual.rol] || usuarioActual.rol
+    const rolRequeridoNormalizado = mapaRoles[rolRequerido] || rolRequerido
+
+    const indiceRolUsuario = jerarquiaRoles.indexOf(rolUsuarioNormalizado)
+    const indiceRolRequerido = jerarquiaRoles.indexOf(rolRequeridoNormalizado)
 
     if (indiceRolUsuario < indiceRolRequerido) {
       return <Navigate to="/no-autorizado" replace />

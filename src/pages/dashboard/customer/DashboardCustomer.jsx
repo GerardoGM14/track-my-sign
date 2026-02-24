@@ -1,64 +1,112 @@
 "use client"
+import { useState, useEffect } from "react"
 import { Link, useParams } from "react-router-dom"
-import { FileText, Clock, CheckCircle, Eye, Download } from "lucide-react"
+import { FileText, Clock, CheckCircle, Eye, Download, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { NavLinkViewTransition } from "@/components/layout/NavLinkViewTransition"
+import { useContextoAuth } from "@/contexts/ContextoAuth"
+import { useContextoTienda } from "@/contexts/ContextoTienda"
+import { db } from "@/lib/firebase"
+import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 export default function DashboardCustomer() {
   const { slugTienda } = useParams()
+  const { usuarioActual } = useContextoAuth()
+  const { tiendaActual } = useContextoTienda()
+  const [loading, setLoading] = useState(true)
+  
+  const [misCotizaciones, setMisCotizaciones] = useState([])
+  const [misOrdenes, setMisOrdenes] = useState([])
 
-  const misCotizaciones = [
-    {
-      id: "COT-001",
-      proyecto: "Letrero Principal Restaurante",
-      estado: "Aprobada",
-      fecha: "2024-01-15",
-      valor: 850,
-    },
-    {
-      id: "COT-002",
-      proyecto: "Señalización Interior",
-      estado: "Pendiente",
-      fecha: "2024-01-18",
-      valor: 1200,
-    },
-    {
-      id: "COT-003",
-      proyecto: "Banner Promocional",
-      estado: "En Revisión",
-      fecha: "2024-01-20",
-      valor: 350,
-    },
-  ]
+  useEffect(() => {
+    if (tiendaActual && usuarioActual) {
+      cargarDatos()
+    }
+  }, [tiendaActual, usuarioActual])
 
-  const misOrdenes = [
-    {
-      id: "ORD-001",
-      proyecto: "Letrero Principal Restaurante",
-      estado: "En Producción",
-      progreso: 75,
-      fechaEntrega: "2024-01-25",
-    },
-    {
-      id: "ORD-002",
-      proyecto: "Rótulo Exterior",
-      estado: "Diseño",
-      progreso: 25,
-      fechaEntrega: "2024-02-01",
-    },
-  ]
+  const cargarDatos = async () => {
+    try {
+      setLoading(true)
+      
+      // Intentar buscar por email, que es lo más seguro que tenemos en el auth actual
+      const emailCliente = usuarioActual.email
+
+      if (!emailCliente) {
+        setLoading(false)
+        return
+      }
+
+      // 1. Cargar Cotizaciones del Cliente
+      // Nota: Asumimos que la cotización guarda el email del cliente en cliente.email
+      // Si la estructura es diferente, habrá que ajustar.
+      const qCotizaciones = query(
+        collection(db, "tiendas", tiendaActual.id, "cotizaciones"),
+        where("cliente.email", "==", emailCliente),
+        orderBy("fechaCreacion", "desc"),
+        limit(5)
+      )
+      const snapCotizaciones = await getDocs(qCotizaciones)
+      const cotizacionesData = snapCotizaciones.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // Normalizar fecha para mostrar
+        fecha: doc.data().fechaCreacion?.seconds ? new Date(doc.data().fechaCreacion.seconds * 1000).toLocaleDateString() : "Fecha desconocida"
+      }))
+      setMisCotizaciones(cotizacionesData)
+      
+      // 2. Cargar Órdenes del Cliente
+      const qOrdenes = query(
+        collection(db, "tiendas", tiendaActual.id, "ordenes"),
+        where("cliente.email", "==", emailCliente),
+        orderBy("fechaCreacion", "desc"),
+        limit(5)
+      )
+      const snapOrdenes = await getDocs(qOrdenes)
+      const ordenesData = snapOrdenes.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        progreso: calcularProgreso(doc.data().estado),
+        fechaEntrega: doc.data().fechaEntrega?.seconds ? new Date(doc.data().fechaEntrega.seconds * 1000).toLocaleDateString() : "Pendiente"
+      }))
+      setMisOrdenes(ordenesData)
+
+    } catch (error) {
+      console.error("Error cargando dashboard cliente:", error)
+      // Si falla por índice inexistente (muy probable al ordenar), intentar sin orderby
+      if (error.code === 'failed-precondition') {
+         console.log("Reintentando sin ordenamiento (falta índice)...")
+         // Fallback simple si no hay índices
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const calcularProgreso = (estado) => {
+    const estados = {
+      'pendiente': 10,
+      'en_progreso': 40,
+      'revision': 80,
+      'completado': 100
+    }
+    return estados[estado] || 0
+  }
 
   const obtenerColorEstado = (estado) => {
     const colores = {
-      Aprobada: "bg-green-100 text-green-800",
-      Pendiente: "bg-yellow-100 text-yellow-800",
-      "En Revisión": "bg-blue-100 text-blue-800",
-      "En Producción": "bg-purple-100 text-purple-800",
-      Diseño: "bg-orange-100 text-orange-800",
+      aprobada: "bg-green-100 text-green-800",
+      pendiente: "bg-yellow-100 text-yellow-800",
+      rechazada: "bg-red-100 text-red-800",
+      borrador: "bg-gray-100 text-gray-800",
     }
-    return colores[estado] || "bg-gray-100 text-gray-800"
+    return colores[estado?.toLowerCase()] || "bg-gray-100 text-gray-800"
+  }
+
+  if (loading) {
+    return <div className="flex justify-center p-8"><LoadingSpinner /></div>
   }
 
   return (
@@ -81,7 +129,7 @@ export default function DashboardCustomer() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{misCotizaciones.length}</div>
-            <p className="text-xs text-muted-foreground">Total solicitadas</p>
+            <p className="text-xs text-muted-foreground">Solicitudes recientes</p>
           </CardContent>
         </Card>
 
@@ -91,7 +139,7 @@ export default function DashboardCustomer() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{misOrdenes.length}</div>
+            <div className="text-2xl font-bold">{misOrdenes.filter(o => o.estado !== 'completado').length}</div>
             <p className="text-xs text-muted-foreground">Proyectos activos</p>
           </CardContent>
         </Card>
@@ -102,108 +150,87 @@ export default function DashboardCustomer() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{misOrdenes.filter(o => o.estado === 'completado').length}</div>
             <p className="text-xs text-muted-foreground">Proyectos finalizados</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Mis Cotizaciones</CardTitle>
-          <CardDescription>Estado actual de tus solicitudes de cotización</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {misCotizaciones.map((cotizacion) => (
-              <div key={cotizacion.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-1">
-                  <p className="font-medium">{cotizacion.proyecto}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {cotizacion.id} • {cotizacion.fecha}
-                  </p>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Últimas Cotizaciones */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Últimas Cotizaciones</CardTitle>
+            <CardDescription>Estado de tus solicitudes recientes</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {misCotizaciones.length > 0 ? (
+                misCotizaciones.map((cot) => (
+                  <div key={cot.id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
+                    <div>
+                      <p className="font-medium text-sm">Cotización #{cot.numero}</p>
+                      <p className="text-xs text-muted-foreground">{cot.fecha}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm">€{cot.totales?.total || 0}</span>
+                        <Badge className={obtenerColorEstado(cot.estado)}>{cot.estado}</Badge>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  No hay cotizaciones recientes.
                 </div>
-                <div className="flex items-center gap-4">
-                  <Badge className={obtenerColorEstado(cotizacion.estado)}>{cotizacion.estado}</Badge>
-                  <p className="font-medium">${cotizacion.valor}</p>
-                  <Button variant="outline" size="sm">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Ver
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Proyectos en Proceso</CardTitle>
-          <CardDescription>Seguimiento del progreso de tus órdenes</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {misOrdenes.map((orden) => (
-              <div key={orden.id} className="space-y-3 p-4 border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{orden.proyecto}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {orden.id} • Entrega: {orden.fechaEntrega}
-                    </p>
+        {/* Órdenes Activas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Órdenes en Curso</CardTitle>
+            <CardDescription>Seguimiento de producción</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {misOrdenes.filter(o => o.estado !== 'completado').length > 0 ? (
+                misOrdenes.filter(o => o.estado !== 'completado').map((orden) => (
+                  <div key={orden.id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm">Orden #{orden.numero}</p>
+                      <span className="text-xs text-muted-foreground">Entrega: {orden.fechaEntrega}</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full transition-all duration-500" 
+                        style={{ width: `${orden.progreso}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span className="capitalize">{orden.estado?.replace('_', ' ')}</span>
+                      <span>{orden.progreso}%</span>
+                    </div>
+                    <div className="pt-2">
+                        <Button variant="outline" size="sm" className="w-full" asChild>
+                            <Link to={`/${slugTienda}/ordenes/${orden.id}`}>
+                                <Eye className="mr-2 h-3 w-3" />
+                                Ver Detalles
+                            </Link>
+                        </Button>
+                    </div>
                   </div>
-                  <Badge className={obtenerColorEstado(orden.estado)}>{orden.estado}</Badge>
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  No tienes órdenes activas en este momento.
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progreso</span>
-                    <span>{orden.progreso}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${orden.progreso}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Ver Detalles
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Descargar Prueba
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>¿Qué puedes hacer?</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Button variant="outline" asChild className="h-20 flex-col bg-transparent">
-              <NavLinkViewTransition to={`/${slugTienda}/cotizaciones/solicitar`}>
-                <FileText className="mb-2 h-6 w-6" />
-                Solicitar Nueva Cotización
-              </NavLinkViewTransition>
-            </Button>
-            <Button variant="outline" asChild className="h-20 flex-col bg-transparent">
-              <NavLinkViewTransition to={`/${slugTienda}/cotizaciones`}>
-                <Eye className="mb-2 h-6 w-6" />
-                Ver Todas Mis Cotizaciones
-              </NavLinkViewTransition>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

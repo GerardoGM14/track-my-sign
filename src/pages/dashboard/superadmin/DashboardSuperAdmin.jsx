@@ -1,8 +1,8 @@
 "use client"
 import { useState, useRef, useEffect } from "react"
 import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore"
-import { db } from "../../lib/firebase"
-import { useContextoAuth } from "../../contexts/ContextoAuth"
+import { db } from "@/lib/firebase"
+import { useContextoAuth } from "@/contexts/ContextoAuth"
 import {
   ArrowUpRight,
   MoreVertical,
@@ -16,11 +16,11 @@ import {
   ShieldCheck,
   DollarSign
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Button } from "../../components/ui/button"
-import { Badge } from "../../components/ui/badge"
-import { LoadingSpinner } from "../../components/ui/loading-spinner"
-import nameSub from "../../assets/subs/name_sub.svg"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import nameSub from "@/assets/subs/name_sub.svg"
 
 export default function DashboardSuperAdmin() {
   const { usuarioActual } = useContextoAuth()
@@ -28,7 +28,111 @@ export default function DashboardSuperAdmin() {
   const [tooltip, setTooltip] = useState(null)
   const [fechaActual, setFechaActual] = useState(new Date())
   const menuRefs = useRef({})
-  const [cargando, setCargando] = useState(false)
+  const [cargando, setCargando] = useState(true)
+  
+  // Estado para datos reales
+  const [stats, setStats] = useState({
+    totalTiendas: 0,
+    ingresosMRR: 0,
+    usuariosTotales: 0,
+    suscripcionesActivas: 0,
+    tiendasRecientes: [],
+    planesPopulares: [],
+    growthData: []
+  })
+
+  // Cargar datos reales de Firebase
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        setCargando(true)
+        
+        // 1. Obtener Tiendas
+        const tiendasRef = collection(db, "tiendas")
+        const tiendasSnap = await getDocs(tiendasRef)
+        const tiendas = tiendasSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        
+        // 2. Obtener Usuarios (total global aproximado o exacto)
+        // Nota: Si hay muchos usuarios, esto puede ser costoso. Para MVP está bien.
+        const usuariosRef = collection(db, "usuarios")
+        const usuariosSnap = await getDocs(usuariosRef) // O usar count() si está disponible en v9
+        
+        // 3. Calcular Métricas
+        const totalTiendas = tiendas.length
+        const usuariosTotales = usuariosSnap.size
+        const suscripcionesActivas = tiendas.filter(t => t.estado === "activa").length
+        
+        // MRR estimado (precios hardcoded por ahora, idealmente vendrían de una config)
+        const precios = { basic: 29, professional: 49, enterprise: 99 }
+        const ingresosMRR = tiendas.reduce((acc, t) => {
+          if (t.estado === "activa") {
+            return acc + (precios[t.plan] || 0)
+          }
+          return acc
+        }, 0)
+
+        // 4. Tiendas Recientes (ordenar por fechaCreacion si existe)
+        const tiendasOrdenadas = [...tiendas].sort((a, b) => {
+          const dateA = a.fechaCreacion?.seconds || 0
+          const dateB = b.fechaCreacion?.seconds || 0
+          return dateB - dateA
+        }).slice(0, 5)
+
+        // 5. Planes Populares
+        const conteoPlanes = tiendas.reduce((acc, t) => {
+          const plan = t.plan || "unknown"
+          acc[plan] = (acc[plan] || 0) + 1
+          return acc
+        }, {})
+        
+        const planesPopulares = Object.entries(conteoPlanes).map(([nombre, cantidad]) => ({
+          nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1),
+          cantidad,
+          porcentaje: Math.round((cantidad / totalTiendas) * 100) || 0,
+          color: nombre === "enterprise" ? "bg-purple-600" : nombre === "professional" ? "bg-blue-600" : "bg-orange-500"
+        })).sort((a, b) => b.cantidad - a.cantidad)
+
+        // 6. Growth Data (Tiendas por mes - últimos 6 meses)
+        const last6Months = Array.from({ length: 6 }, (_, i) => {
+          const d = new Date()
+          d.setMonth(d.getMonth() - i)
+          return d
+        }).reverse()
+
+        const growthData = last6Months.map(date => {
+          const monthKey = `${date.getFullYear()}-${date.getMonth()}`
+          const count = tiendas.filter(t => {
+            if (!t.fechaCreacion) return false
+            const d = new Date(t.fechaCreacion.seconds * 1000)
+            return `${d.getFullYear()}-${d.getMonth()}` === monthKey
+          }).length
+          
+          return {
+            month: date.toLocaleString('default', { month: 'short' }),
+            tiendas: count,
+            height: count * 20 // Escala simple para visualización
+          }
+        })
+
+        setStats({
+          totalTiendas,
+          ingresosMRR,
+          usuariosTotales,
+          suscripcionesActivas,
+          tiendasRecientes: tiendasOrdenadas,
+          planesPopulares,
+          growthData
+        })
+
+      } catch (error) {
+        console.error("Error cargando dashboard superadmin:", error)
+      } finally {
+        setCargando(false)
+      }
+    }
+
+    cargarDatos()
+  }, [])
 
   // Actualizar fecha en tiempo real
   useEffect(() => {
@@ -56,24 +160,12 @@ export default function DashboardSuperAdmin() {
     }
   }, [])
 
-  // Datos mockeados para KPIs globales
-  const kpiData = {
-    totalTiendas: 124,
-    ingresosMRR: 15420,
-    usuariosTotales: 843,
-    suscripcionesActivas: 118,
-    cambioTiendas: 12.5,
-    cambioIngresos: 8.4,
-    cambioUsuarios: 15.2,
-    cambioSuscripciones: 5.7
-  }
-
   // KPIs adaptados para SuperAdmin
   const kpis = [
     {
       titulo: "Total Tiendas",
-      valor: kpiData.totalTiendas.toString(),
-      cambio: kpiData.cambioTiendas.toString(),
+      valor: stats.totalTiendas.toString(),
+      cambio: "+0", // Sin histórico real
       bgColor: "rgb(115, 58, 234)",
       graficoColor: "#733AEA",
       tipoGrafico: "linea",
@@ -81,8 +173,8 @@ export default function DashboardSuperAdmin() {
     },
     {
       titulo: "MRR (Ingresos Recurrentes)",
-      valor: `€${(kpiData.ingresosMRR / 1000).toFixed(1)}K`,
-      cambio: kpiData.cambioIngresos.toString(),
+      valor: `€${(stats.ingresosMRR).toLocaleString()}`,
+      cambio: "+0",
       bgColor: "rgb(5, 142, 252)",
       graficoColor: "#058EFC",
       tipoGrafico: "linea",
@@ -90,8 +182,8 @@ export default function DashboardSuperAdmin() {
     },
     {
       titulo: "Usuarios Totales",
-      valor: kpiData.usuariosTotales.toString(),
-      cambio: kpiData.cambioUsuarios.toString(),
+      valor: stats.usuariosTotales.toString(),
+      cambio: "+0",
       bgColor: "rgb(253, 151, 34)",
       graficoColor: "#FD9722",
       tipoGrafico: "barras",
@@ -99,8 +191,8 @@ export default function DashboardSuperAdmin() {
     },
     {
       titulo: "Suscripciones Activas",
-      valor: kpiData.suscripcionesActivas.toString(),
-      cambio: kpiData.cambioSuscripciones.toString(),
+      valor: stats.suscripcionesActivas.toString(),
+      cambio: "+0",
       bgColor: "rgb(242, 66, 110)",
       graficoColor: "#F2426E",
       tipoGrafico: "linea",
@@ -124,53 +216,6 @@ export default function DashboardSuperAdmin() {
   const generarPuntosLineaMejorado = (valores, maxValor, altura, ancho) => {
     return valores.map((v, i) => `${(i / (valores.length - 1)) * ancho},${altura - (v / maxValor) * altura}`).join(" ")
   }
-
-  // Tiendas Recientes (Mock)
-  const tiendasRecientes = [
-    {
-      id: 1,
-      nombre: "Imprenta Rápida Express",
-      plan: "Empresarial",
-      estado: "Activa",
-      estadoColor: "bg-green-100 text-green-800",
-      fechaRegistro: "24 Ene 2024",
-      ingresos: "€120/mes",
-    },
-    {
-      id: 2,
-      nombre: "Rotulación Moderna SL",
-      plan: "Profesional",
-      estado: "Activa",
-      estadoColor: "bg-green-100 text-green-800",
-      fechaRegistro: "23 Ene 2024",
-      ingresos: "€80/mes",
-    },
-    {
-      id: 3,
-      nombre: "Gráficas del Norte",
-      plan: "Básico",
-      estado: "Pendiente",
-      estadoColor: "bg-orange-100 text-orange-800",
-      fechaRegistro: "22 Ene 2024",
-      ingresos: "€40/mes",
-    },
-    {
-      id: 4,
-      nombre: "Diseño y Corte Digital",
-      plan: "Profesional",
-      estado: "Activa",
-      estadoColor: "bg-green-100 text-green-800",
-      fechaRegistro: "21 Ene 2024",
-      ingresos: "€80/mes",
-    },
-  ]
-
-  // Planes Populares (Mock)
-  const planesPopulares = [
-    { nombre: "Plan Profesional", cantidad: 65, porcentaje: 55, color: "bg-blue-600" },
-    { nombre: "Plan Empresarial", cantidad: 35, porcentaje: 30, color: "bg-purple-600" },
-    { nombre: "Plan Básico", cantidad: 18, porcentaje: 15, color: "bg-orange-500" },
-  ]
 
   return (
     <div className="space-y-6 min-h-full px-18 pt-0">
@@ -324,11 +369,26 @@ export default function DashboardSuperAdmin() {
             </div>
           </CardHeader>
           <CardContent>
-             <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                <div className="text-center">
-                  <Activity className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">Gráfico de crecimiento de tiendas e ingresos</p>
-                </div>
+             <div className="h-64 flex items-end justify-between px-4 pb-4 pt-8 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                {stats.growthData.length > 0 ? (
+                  stats.growthData.map((data, index) => (
+                    <div key={index} className="flex flex-col items-center gap-2 w-full">
+                      <div 
+                        className="w-8 bg-blue-500 rounded-t-sm transition-all duration-500 ease-out hover:bg-blue-600 relative group"
+                        style={{ height: `${Math.max(data.height, 4)}px` }} // Altura mínima visual
+                      >
+                         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                            {data.tiendas} tiendas
+                         </div>
+                      </div>
+                      <span className="text-xs text-gray-500 font-medium uppercase">{data.month}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <p className="text-sm text-gray-500">Sin datos suficientes</p>
+                  </div>
+                )}
              </div>
           </CardContent>
         </Card>
@@ -342,7 +402,7 @@ export default function DashboardSuperAdmin() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {planesPopulares.map((plan, i) => (
+              {stats.planesPopulares.map((plan, i) => (
                 <div key={i} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -380,18 +440,31 @@ export default function DashboardSuperAdmin() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {tiendasRecientes.map((tienda) => (
+            {stats.tiendasRecientes.map((tienda) => (
               <div key={tienda.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-gray-900 leading-tight mb-1">{tienda.nombre}</p>
-                    <p className="text-xs text-gray-500 leading-tight">Registrada el {tienda.fechaRegistro}</p>
+                    <p className="text-xs text-gray-500 leading-tight">
+                      Registrada el {tienda.fechaCreacion?.seconds 
+                        ? new Date(tienda.fechaCreacion.seconds * 1000).toLocaleDateString() 
+                        : 'N/A'}
+                    </p>
                   </div>
-                  <Badge className={`${tienda.estadoColor} text-xs font-medium`}>{tienda.estado}</Badge>
+                  <Badge className={`text-xs font-medium ${
+                    tienda.estado === 'activa' ? 'bg-green-100 text-green-800' :
+                    tienda.estado === 'suspendida' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {tienda.estado || 'pendiente'}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between mt-1">
-                  <div className="text-xs text-gray-600 font-medium">Plan: {tienda.plan}</div>
-                  <div className="text-xs font-bold text-gray-900">{tienda.ingresos}</div>
+                  <div className="text-xs text-gray-600 font-medium capitalize">Plan: {tienda.plan || 'basic'}</div>
+                  <div className="text-xs font-bold text-gray-900">
+                    {tienda.plan === 'enterprise' ? '€99/mo' : 
+                     tienda.plan === 'professional' ? '€49/mo' : '€29/mo'}
+                  </div>
                 </div>
               </div>
             ))}

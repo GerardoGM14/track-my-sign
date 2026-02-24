@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
 import { FileText, CheckCircle, XCircle, Download, Eye, Clock, MessageSquare, Star, AlertTriangle } from "lucide-react"
 import mountain from "../../assets/mountain.svg"
+import { PDFDownloadLink } from "@react-pdf/renderer"
+import DocumentoCotizacion from "@/components/pdf/DocumentoCotizacion"
 
 export function PortalCliente() {
   const { usuarioActual } = useContextoAuth()
@@ -23,6 +25,9 @@ export function PortalCliente() {
   const [pruebaSeleccionada, setPruebaSeleccionada] = useState(null)
   const [ordenSeleccionada, setOrdenSeleccionada] = useState(null)
   const [cotizacionSeleccionada, setCotizacionSeleccionada] = useState(null)
+  const [mostrarCheckout, setMostrarCheckout] = useState(false)
+  const [procesandoPago, setProcesandoPago] = useState(false)
+  const [metodoPago, setMetodoPago] = useState("tarjeta")
 
   useEffect(() => {
     if (usuarioActual) {
@@ -553,6 +558,19 @@ export function PortalCliente() {
                           </DialogContent>
                         </Dialog>
 
+                        <PDFDownloadLink
+                          document={<DocumentoCotizacion cotizacion={cotizacion} tienda={{ nombre: cotizacion.tiendaNombre }} />}
+                          fileName={`cotizacion-${cotizacion.numero}.pdf`}
+                          className="w-full block"
+                        >
+                          {({ blob, url, loading, error }) => (
+                            <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={loading}>
+                              <Download className="w-4 h-4 mr-2" />
+                              {loading ? 'Generando PDF...' : 'Descargar PDF'}
+                            </Button>
+                          )}
+                        </PDFDownloadLink>
+
                         {cotizacion.estado === "enviada" && (
                           <div className="flex gap-2">
                             <Dialog>
@@ -590,11 +608,99 @@ export function PortalCliente() {
                                     />
                                   </div>
                                   <div className="flex gap-2">
-                                    <Button onClick={() => aprobarCotizacion(cotizacion)} className="flex-1">
-                                      Confirmar Aprobación
+                                    <Button onClick={() => setMostrarCheckout(true)} className="flex-1">
+                                      Proceder al Pago y Aprobar
                                     </Button>
                                     <Button variant="outline" onClick={() => setCotizacionSeleccionada(null)}>
                                       Cancelar
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+
+                            {/* Diálogo de Checkout */}
+                            <Dialog open={mostrarCheckout} onOpenChange={setMostrarCheckout}>
+                              <DialogContent className="sm:max-w-[500px]">
+                                <DialogHeader>
+                                  <DialogTitle>Finalizar Pago</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-6">
+                                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="text-gray-600">Total a pagar:</span>
+                                      <span className="text-2xl font-bold text-gray-900">€{cotizacionSeleccionada?.totales?.total}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500">Incluye impuestos y tasas aplicables</p>
+                                  </div>
+
+                                  <div className="space-y-4">
+                                    <Label>Método de Pago</Label>
+                                    <RadioGroup defaultValue="tarjeta" onValueChange={setMetodoPago} className="grid grid-cols-2 gap-4">
+                                      <div>
+                                        <RadioGroupItem value="tarjeta" id="tarjeta" className="peer sr-only" />
+                                        <Label
+                                          htmlFor="tarjeta"
+                                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                        >
+                                          <CreditCard className="mb-3 h-6 w-6" />
+                                          Tarjeta
+                                        </Label>
+                                      </div>
+                                      <div>
+                                        <RadioGroupItem value="transferencia" id="transferencia" className="peer sr-only" />
+                                        <Label
+                                          htmlFor="transferencia"
+                                          className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                        >
+                                          <Building className="mb-3 h-6 w-6" />
+                                          Transferencia
+                                        </Label>
+                                      </div>
+                                    </RadioGroup>
+                                  </div>
+
+                                  {metodoPago === "tarjeta" && (
+                                    <div className="space-y-4 border-t pt-4">
+                                      <div className="space-y-2">
+                                        <Label>Número de Tarjeta</Label>
+                                        <Input placeholder="0000 0000 0000 0000" />
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <Label>Expiración</Label>
+                                          <Input placeholder="MM/YY" />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <Label>CVC</Label>
+                                          <Input placeholder="123" />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {metodoPago === "transferencia" && (
+                                    <div className="bg-blue-50 p-4 rounded-md text-sm text-blue-800">
+                                      <p className="font-semibold mb-1">Instrucciones:</p>
+                                      <p>Realiza la transferencia al IBAN: ES91 0000 0000 0000 0000</p>
+                                      <p className="mt-1">Envía el comprobante a pagos@trackmysign.com</p>
+                                    </div>
+                                  )}
+
+                                  <div className="flex gap-2 pt-4">
+                                    <Button 
+                                      className="w-full bg-green-600 hover:bg-green-700" 
+                                      onClick={procesarPagoSimulado}
+                                      disabled={procesandoPago}
+                                    >
+                                      {procesandoPago ? (
+                                        <>Procesando...</>
+                                      ) : (
+                                        <>
+                                          <CheckCircle className="w-4 h-4 mr-2" />
+                                          Pagar €{cotizacionSeleccionada?.totales?.total}
+                                        </>
+                                      )}
                                     </Button>
                                   </div>
                                 </div>

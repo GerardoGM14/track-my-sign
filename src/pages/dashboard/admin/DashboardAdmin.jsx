@@ -35,6 +35,7 @@ export default function DashboardAdmin() {
   const [openMenus, setOpenMenus] = useState({})
   const [tooltip, setTooltip] = useState(null)
   const [productos, setProductos] = useState([])
+  const [ordenesActivas, setOrdenesActivas] = useState([])
   const [cargandoProductos, setCargandoProductos] = useState(false)
   const [fechaActual, setFechaActual] = useState(new Date())
   const menuRefs = useRef({})
@@ -238,55 +239,52 @@ export default function DashboardAdmin() {
     { fecha: "31 Ene", cotizaciones: 24, ordenes: 20, facturas: 18, ingresos: 22000 },
   ]
 
-  // Top Productos se calcula dinámicamente desde Firebase
+  // Cargar órdenes activas
+  useEffect(() => {
+    const cargarOrdenesActivas = async () => {
+      try {
+        if (!tiendaActual) return
 
-  // Órdenes activas
-  const ordenesActivas = [
-    {
-      id: 1,
-      proyecto: "Letras Corpóreas - Empresa ABC",
-      cliente: "Empresa ABC",
-      estado: "En Progreso",
-      estadoColor: "bg-green-100 text-green-800",
-      asignado: ["Juan", "María", "Pedro"],
-      fechaCreacion: "01 Dic 22",
-      fechaEntrega: "01 Dic - 07 Dic",
-      prioridad: "Alta",
-    },
-    {
-      id: 2,
-      proyecto: "Vinilos Decorativos - Tienda XYZ",
-      cliente: "Tienda XYZ",
-      estado: "En Progreso",
-      estadoColor: "bg-green-100 text-green-800",
-      asignado: ["Ana", "Luis", "Carlos"],
-      fechaCreacion: "28 Nov 22",
-      fechaEntrega: "01 Dic - 07 Dic",
-      prioridad: "Media",
-    },
-    {
-      id: 3,
-      proyecto: "Señalética Interior - Oficinas Corp",
-      cliente: "Oficinas Corp",
-      estado: "Pausada",
-      estadoColor: "bg-orange-100 text-orange-800",
-      asignado: ["Sofía", "Miguel"],
-      fechaCreacion: "15 Nov 22",
-      fechaEntrega: "01 Dic - 07 Dic",
-      prioridad: "Baja",
-    },
-    {
-      id: 4,
-      proyecto: "Impresión Digital - Evento Navideño",
-      cliente: "Eventos Plus",
-      estado: "En Progreso",
-      estadoColor: "bg-green-100 text-green-800",
-      asignado: ["Laura", "Diego", "Elena"],
-      fechaCreacion: "12 Dic 22",
-      fechaEntrega: "01 Dic - 07 Dic",
-      prioridad: "Alta",
-    },
-  ]
+        const ordenesRef = collection(db, "tiendas", tiendaActual.id, "ordenes")
+        // Traer todas y filtrar en cliente o usar query compuesta si hay índices
+        // Por simplicidad traemos las recientes
+        const q = query(ordenesRef, orderBy("fechaCreacion", "desc"))
+        const snapshot = await getDocs(q)
+        
+        const ordenes = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(o => o.estado !== "completado" && o.estado !== "entregado")
+          .slice(0, 5) // Solo las 5 más recientes activas
+
+        setOrdenesActivas(ordenes)
+      } catch (error) {
+        console.error("Error cargando órdenes activas:", error)
+      }
+    }
+
+    cargarOrdenesActivas()
+  }, [tiendaActual])
+
+  // Helpers para colores de estado y prioridad
+  const getEstadoColor = (estado) => {
+    switch (estado) {
+      case "pendiente": return "bg-yellow-100 text-yellow-800"
+      case "en_progreso": return "bg-blue-100 text-blue-800"
+      case "revision": return "bg-purple-100 text-purple-800"
+      case "pausada": return "bg-orange-100 text-orange-800"
+      case "completado": return "bg-green-100 text-green-800"
+      default: return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getPrioridadColor = (prioridad) => {
+    switch (prioridad) {
+      case "alta": return "text-red-600 bg-red-50"
+      case "media": return "text-orange-600 bg-orange-50"
+      case "baja": return "text-blue-600 bg-blue-50"
+      default: return "text-gray-600 bg-gray-50"
+    }
+  }
 
   // Estadísticas clave
   const estadisticasClave = [
@@ -919,42 +917,47 @@ export default function DashboardAdmin() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {ordenesActivas.map((orden) => (
-                <div key={orden.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900 leading-tight mb-1">{orden.proyecto}</p>
-                      <p className="text-xs text-gray-500 leading-tight">Creada el {orden.fechaCreacion}</p>
-                    </div>
-                    <Badge className={`${orden.estadoColor} text-xs font-medium`}>{orden.estado}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex -space-x-2">
-                        {orden.asignado.slice(0, 3).map((nombre, idx) => (
-                          <div
-                            key={idx}
-                            className="h-6 w-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold border-2 border-white"
-                          >
-                            {nombre[0]}
-                          </div>
-                        ))}
-                        {orden.asignado.length > 3 && (
-                          <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-semibold border-2 border-white">
-                            +{orden.asignado.length - 3}
-                          </div>
-                        )}
+            {ordenesActivas.length > 0 ? (
+              <div className="space-y-4">
+                {ordenesActivas.map((orden) => (
+                  <div key={orden.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900 leading-tight mb-1">
+                          {orden.titulo || orden.proyecto || "Sin título"}
+                        </p>
+                        <p className="text-xs text-gray-500 leading-tight">
+                          Cliente: {orden.cliente?.nombre || "N/A"} • 
+                          Creada: {orden.fechaCreacion?.seconds 
+                            ? new Date(orden.fechaCreacion.seconds * 1000).toLocaleDateString() 
+                            : 'N/A'}
+                        </p>
                       </div>
+                      <Badge className={`${getEstadoColor(orden.estado)} text-xs font-medium`}>
+                        {orden.estado?.replace('_', ' ') || 'pendiente'}
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-gray-600">
-                      <span>{orden.fechaEntrega}</span>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex -space-x-2 overflow-hidden">
+                         {/* Placeholder para avatares asignados si existieran */}
+                         <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-200 flex items-center justify-center text-[10px] text-gray-500 font-bold">
+                            N/A
+                         </div>
+                      </div>
+                      <Badge variant="outline" className={`${getPrioridadColor(orden.prioridad)} border-0 text-[10px] uppercase font-bold tracking-wider`}>
+                        {orden.prioridad || "normal"}
+                      </Badge>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No hay órdenes activas recientes.
+              </div>
+            )}
           </CardContent>
+
         </Card>
 
         {/* Estadísticas Clave */}
