@@ -1,33 +1,33 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import { ProveedorAuth } from "./contexts/ContextoAuth"
 import { ProveedorTienda } from "./contexts/ContextoTienda"
-import { Layout } from "./components/Layout"
-import { RutaProtegida } from "./components/RutaProtegida"
-import LandingPage from "./pages/LandingPage"
-import { PaginaPlanes } from "./pages/PaginaPlanes"
-import { PaginaLogin } from "./pages/PaginaLogin"
-import { PaginaRegistro } from "./pages/PaginaRegistro"
-import { PaginaProductos } from "./pages/PaginaProductos"
-import { PaginaPrecios } from "./pages/PaginaPrecios"
-import PaginaPreciosSaaS from "./pages/PaginaPreciosSaaS"
-import { PaginaCotizaciones } from "./pages/PaginaCotizaciones"
-import { PaginaOrdenes } from "./pages/PaginaOrdenes"
-import { PaginaClientes } from "./pages/PaginaClientes"
-import { PortalCliente } from "./pages/PortalCliente"
-import { PaginaNoEncontrada } from "./pages/PaginaNoEncontrada"
-import { PaginaFacturacion } from "./pages/PaginaFacturacion"
-import PaginaUsuarios from "./pages/PaginaUsuarios"
-import PaginaConfiguracion from "./pages/PaginaConfiguracion"
-import PaginaMaestros from "./pages/PaginaMaestros"
-import PaginaPerfil from "./pages/PaginaPerfil"
-import SuperAdminLicencia from "./pages/SuperAdminLicencia"
-import DashboardSuperAdmin from "./pages/DashboardSuperAdmin"
-import PaginaGestionTiendas from "./pages/PaginaGestionTiendas"
-import PaginaAnalyticsGlobal from "./pages/PaginaAnalyticsGlobal"
-import PaginaAdministracion from "./pages/PaginaAdministracion"
-import { RutaDashboard } from "./components/RutaDashboard"
-import LayoutDashboard from "./components/LayoutDashboard"
-import { RouteLoader } from "./components/RouteLoader"
+import { Layout } from "./components/layout/Layout"
+import { RutaProtegida } from "./components/layout/RutaProtegida"
+import LandingPage from "./pages/public/LandingPage"
+import { PaginaPlanes } from "./pages/public/PaginaPlanes"
+import { PaginaLogin } from "./pages/auth/PaginaLogin"
+import { PaginaRegistro } from "./pages/auth/PaginaRegistro"
+import { PaginaProductos } from "@/pages/dashboard/admin/PaginaProductos"
+import { PaginaPrecios } from "@/pages/dashboard/admin/PaginaPrecios"
+import PaginaPreciosSaaS from "./pages/public/PaginaPreciosSaaS"
+import { PaginaCotizaciones } from "@/pages/dashboard/shared/PaginaCotizaciones"
+import { PaginaOrdenes } from "@/pages/dashboard/shared/PaginaOrdenes"
+import { PaginaClientes } from "@/pages/dashboard/shared/PaginaClientes"
+import { PortalCliente } from "./pages/public/PortalCliente"
+import { PaginaNoEncontrada } from "./pages/public/PaginaNoEncontrada"
+import { PaginaFacturacion } from "@/pages/dashboard/admin/PaginaFacturacion"
+import PaginaUsuarios from "@/pages/dashboard/admin/PaginaUsuarios"
+import PaginaConfiguracion from "@/pages/dashboard/admin/PaginaConfiguracion"
+import PaginaMaestros from "@/pages/dashboard/admin/PaginaMaestros"
+import PaginaPerfil from "@/pages/dashboard/shared/PaginaPerfil"
+import SuperAdminLicencia from "./pages/super-admin/SuperAdminLicencia"
+import DashboardSuperAdmin from "./pages/super-admin/DashboardSuperAdmin"
+import PaginaGestionTiendas from "./pages/super-admin/PaginaGestionTiendas"
+import PaginaAnalyticsGlobal from "./pages/super-admin/PaginaAnalyticsGlobal"
+import PaginaAdministracion from "./pages/super-admin/PaginaAdministracion"
+import { RutaDashboard } from "./components/layout/RutaDashboard"
+import LayoutDashboard from "./components/layout/LayoutDashboard"
+import { RouteLoader } from "./components/layout/RouteLoader"
 
 function App() {
   return (
@@ -106,7 +106,7 @@ function App() {
               <Route
                 path="/:slugTienda/facturacion"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="admin">
                     <LayoutDashboard>
                       <PaginaFacturacion />
                     </LayoutDashboard>
@@ -116,7 +116,7 @@ function App() {
               <Route
                 path="/:slugTienda/usuarios"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="admin">
                     <LayoutDashboard>
                       <PaginaUsuarios />
                     </LayoutDashboard>
@@ -126,7 +126,7 @@ function App() {
               <Route
                 path="/:slugTienda/maestros"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="admin">
                     <LayoutDashboard>
                       <PaginaMaestros />
                     </LayoutDashboard>
@@ -136,7 +136,7 @@ function App() {
               <Route
                 path="/:slugTienda/configuracion"
                 element={
-                  <RutaProtegida>
+                  <RutaProtegida rolRequerido="admin">
                     <LayoutDashboard>
                       <PaginaConfiguracion />
                     </LayoutDashboard>
